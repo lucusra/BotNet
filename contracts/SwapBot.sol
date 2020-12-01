@@ -2,6 +2,12 @@ pragma solidity 0.6.6;
 
 import "./Credits.sol";
 
+// ----------------------------------------------------------------------------
+//
+//                      (c) The BotNet Project 2020
+//
+// ----------------------------------------------------------------------------
+
 contract SwapBot is Credits {
     uint _conversionRate;
 
