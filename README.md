@@ -21,6 +21,17 @@ This project isn't intended to be the next world currency, but more towards a sp
 - `setConversionRate`: Changes the conversion rate of how many Credits is equal to an ETH.
 - `conversionRate`: Displays the conversion rate.
 
+## Future Implementations 
+### DistributionBot 📠
+The DistributionBot receives and distributes Credits, from rogue HackerBots that have accumulated funds from exploiting systems on the Net, to the users that are a part of the _**Enigma**_. You may enter the _Enigma_ by paying the fee required at the time.
+- `enterEnigma`: Users pay the fee to enter the _Enigma_. 
+- `requestNewFee`: Users input what price the _Enigma_ entrace fee shall be. (Pushes number into array)
+- `viewFee`: Allows you to view the current fee to enter the _Enigma_. (Calculates the average of all the `requestNewFee` array inputs)
+- `decryptEnigma`: Distributes funds accumulated from rogue HackerBots to accounts that have paid to enter the RoguePool.
+
+### BountyBot 📋
+The BountyBot has a list of people/organisations to hack, in which upon completition, you will receive ERC-721 NFTs that can be exchanged for Credits.
+
 ## License
 - https://github.com/lucusra/BotNet/blob/main/LICENSE
 - https://github.com/lucusra/BotNet/commit/a685fb56bf87904d37e02ec1ea0473efc479b9a8
