@@ -10,6 +10,7 @@ This project isn't intended to be the next world currency, but more towards a sp
 ## Contracts & Functionalities
 ### HackerBot 👥💬💰
 - `encrypt_And_Hack`: You input an `encryptAmount` of Credits into the HackerBot, which then encrypts the funds. After the conversion, the HackerBot starts hacking, and after 30 days, the total amount of funds initally injected into it is increased by 2%. Becareful though, the HackerBot can only commence a single hack at a time. If you wish to retrieve your funds, you must either wait for it to finish hacking or `abortHack`.
+- `decryptPortion_And_beginNewHack`: Begins a new hack after allowing users to decrypt more credits and, if they choose to, withdraw a porition of the encrypted HackerBot funds (such as profits from previously completed hack).
 - `decrypt_And_Redeem`: When the hacking progress is complete, you are able to decrypt the funds and transfer the inital amount + the profit to your Credits balance.
 - `abortHack`: Allows you to cancel the current hack in progress, transfering the funds back into your Credit balance, without any penalty or profit.
 - `viewHack`: Displays the inital encrypted balance deposited into the HackerBot, the encrypted balance after the hack, the profit after the hack, and the time remaining until the hack is complete (in seconds, minutes, hours and days).
@@ -19,3 +20,7 @@ This project isn't intended to be the next world currency, but more towards a sp
 - `exchange_Credits_To_Eth`: Converts Credits to ETH.
 - `setConversionRate`: Changes the conversion rate of how many Credits is equal to an ETH.
 - `conversionRate`: Displays the conversion rate.
+
+## License
+- https://github.com/lucusra/BotNet/blob/main/LICENSE
+- https://github.com/lucusra/BotNet/commit/a685fb56bf87904d37e02ec1ea0473efc479b9a8
