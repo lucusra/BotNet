@@ -10,24 +10,26 @@ import "./InfoBot.sol";
 //
 // ----------------------------------------------------------------------------
 
+// @upgrade - need to make sure that the supply
+
 contract Credits is CreditsInterface, Permissioned, InfoBot {
 	using SafeMath for uint;
 
 	string name = "Credits";
     string symbol = "CRDT";
     uint8 decimals = 18;
-    uint256 _initialSupply = 250000000000000000000000000;   // supply upon deployment
-    uint256 _totalSupply; 	 
-    uint256 _totalSupplyHeld; // users holding supply
+    uint256 initalCreditsSupply = 250000000000000000000000000;   // supply upon deployment
+    uint256 totalCreditsSupply;
+    uint256 totalCreditsHeld;	 
 
     constructor() public{
-    	_totalSupply = _initialSupply;
-        _totalSupplyHeld = _totalSupply;
+    	totalCreditsSupply = initalCreditsSupply;
+        totalCreditsHeld = 0;
     	isPaused = true;
 
     }
     function totalSupply() override external view returns (uint) {
-    	return _totalSupply;	
+    	return totalCreditsSupply;	
     }
     function balanceOf(address tokenOwner) override external view returns (uint balance) {
     	return users[tokenOwner].creditBalance;
@@ -56,15 +58,18 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
     function allowance(address tokenOwner, address spender) override external pauseFunction view returns (uint remaining) {
         return users[tokenOwner].allowed[spender];
     }
-    function mint(address tokenOwner, uint tokens) override external onlyOwner returns (bool success) {
+    function generateCredits(address tokenOwner, uint tokens) override external onlyOwner returns (bool success) {
         users[tokenOwner].creditBalance = users[tokenOwner].creditBalance.add(tokens);
-        _totalSupply = _totalSupply.add(tokens);
+        totalCreditsSupply = totalCreditsSupply.add(tokens);
+        totalCreditsHeld = totalCreditsHeld.add(tokens);
         emit Transfer(address(0), tokenOwner, tokens);
         return true;
     }
-    function burn(uint tokens) override external onlyOwner returns (bool success) {
+    function deleteCredits(uint tokens) override external onlyOwner returns (bool success) {
+        require(totalCreditsSupply >= tokens && totalCreditsHeld > tokens, "unable to burn held tokens");
+        require(totalCreditsSupply >= totalCreditsHeld, "unable to burn held tokens");
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(tokens);
-        _totalSupply = _totalSupply.sub(tokens);
+        totalCreditsSupply = totalCreditsSupply.sub(tokens);
         emit Transfer(msg.sender, address(0), tokens);
         return true;
     }
