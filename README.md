@@ -29,7 +29,7 @@ The DistributionBot receives and distributes Credits, from rogue HackerBots that
 - `enterEnigma`: Users pay the fee to enter the _Enigma_. 
 - `leaveEnigma`: Users can choose to leave the _Enigma_.
 - `updateFee`: Owner updates fee (Maybe in the future: Users input what price the _Enigma_ entrace fee shall be. (Pushes number into array)).
-- `viewFee`: Allows you to view the current fee to enter the _Enigma_. (Calculates the average of all the `requestNewFee` array inputs)
+- `viewEnigma`: Allows you to view the current fee to enter the _Enigma_ & the amount of funds in the _Enigma_. 
 - `decryptEnigma`: Owner distributes funds accumulated from rogue HackerBots to accounts that have paid to enter the RoguePool. (Maybe in the future: decryptEnigmaPortion: allows users to decrypt/redeem their portion manually)
 
 
