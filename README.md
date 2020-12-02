@@ -8,6 +8,9 @@ I'm currently thinking about converting to an ERC1155 standard so that I could i
 This project isn't intended to be the next world currency, but more towards a spin off of SushiSwap, mainly because I liked the art style on the website.
 
 ## Contracts & Functionalities
+### InfoBot 📋
+Cointains all the data of each user.
+
 ### HackerBot 👥💬💰
 - `encrypt_And_Hack`: You input an `encryptAmount` of Credits into the HackerBot, which then encrypts the funds. After the conversion, the HackerBot starts hacking, and after 30 days, the total amount of funds initally injected into it is increased by 2%. Becareful though, the HackerBot can only commence a single hack at a time. If you wish to retrieve your funds, you must either wait for it to finish hacking or `abortHack`.
 - `decryptPortion_And_beginNewHack`: Begins a new hack after allowing users to decrypt more credits and, if they choose to, withdraw a porition of the encrypted HackerBot funds (such as profits from previously completed hack).
@@ -29,7 +32,7 @@ The DistributionBot receives and distributes Credits, from rogue HackerBots that
 - `viewFee`: Allows you to view the current fee to enter the _Enigma_. (Calculates the average of all the `requestNewFee` array inputs)
 - `decryptEnigma`: Distributes funds accumulated from rogue HackerBots to accounts that have paid to enter the RoguePool.
 
-### BountyBot 📋
+### BountyBot 💸
 The BountyBot has a list of people/organisations to hack, in which upon completition, you will receive ERC-721 NFTs that can be exchanged for Credits.
 
 ## License
