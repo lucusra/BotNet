@@ -43,6 +43,10 @@ contract DistributionBot is Credits {
         return true;
     }
 
+    /// @notice allows the owner to update the Enigma enterance fee.
+    /// @param newFee                        : the updated fee for entering the Enigma.
+    /// @return updatedFee                   : returns the new fee, set by the owner.
+    /// @return success                      : whether or not the transaction to leave was a success
     function updateFee(uint newFee) external onlyOwner returns (uint updatedFee, bool success) {
         _enigmaFee = newFee;
         return (_enigmaFee, true);
