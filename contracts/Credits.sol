@@ -15,18 +15,28 @@ import "./InfoBot.sol";
 contract Credits is CreditsInterface, Permissioned, InfoBot {
 	using SafeMath for uint;
 
-	string name = "Credits";
-    string symbol = "CRDT";
-    uint8 decimals = 18;
-    uint256 initalCreditsSupply = 250000000000000000000000000;   // supply upon deployment
-    uint256 totalCreditsSupply;
-    uint256 totalCreditsHeld;	 
+	string _name = "Credits";
+    string _symbol = "CRDTS";
+    uint8 _decimals = 18;
+    uint256 initalCreditsSupply;   // supply upon deployment
+    uint256 totalCreditsSupply;    // Credits' total supply (can be adjusted)
+    uint256 totalCreditsHeld;	   // how many Credits are in custody of users
 
-    constructor() public{
+    constructor() public{            
+        initalCreditsSupply = 1500000000000000000000000;    // 1,500,000 inital
     	totalCreditsSupply = initalCreditsSupply;
         totalCreditsHeld = 0;
     	isPaused = true;
 
+    }
+    function symbol() override external view returns (string memory) {
+        return _symbol;
+    }
+    function name() override external view returns (string memory) {
+        return _name;
+    }
+    function decimals() override external view returns (uint8) {
+        return _decimals;
     }
     function totalSupply() override external view returns (uint) {
     	return totalCreditsSupply;	
@@ -36,6 +46,7 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
     }
     function transfer(address to, uint tokens) override external pauseFunction returns (bool success) {
         require(to != msg.sender, "unable to transfer credits to yourself");
+        require(users[msg.sender].creditBalance >= tokens, "insufficient credits");
     	users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(tokens);
     	users[to].creditBalance = users[to].creditBalance.add(tokens);
     	emit Transfer(msg.sender, to, tokens);
