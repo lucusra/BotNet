@@ -4,7 +4,7 @@ pragma solidity 0.6.6;
 interface ERC20 {
     function totalSupply() external view returns (uint);
     function balanceOf(address tokenOwner) external view returns (uint balance);
-    function allowance(address tokenOwner, address spender) external view returns (uint remaining);
+    function viewAllowance(address tokenOwner, address spender) external view returns (uint remaining);
     function transfer(address _to, uint _value) external returns (bool success);
     function approve(address _spender, uint _value) external returns (bool success);
     function transferFrom(address _from, address _to, uint _value) external returns (bool success);
