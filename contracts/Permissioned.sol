@@ -3,11 +3,16 @@ pragma solidity 0.6.6;
 import "./SafeMath.sol";
 
 contract Permissioned {
-    address public owner = msg.sender;
+    
+    constructor() public {
+        owner = msg.sender;
+        isPaused = false;
+    }
+
+// ------------------[ ownership] ------------------
+    address public owner;
 
     event OwnershipTransferred(address indexed from, address indexed to);
-
-// ------------[ ownership functions ]---------------
 
     modifier onlyOwner() {
         require(msg.sender == owner, "This function is restricted to the contract's owner");
@@ -21,7 +26,7 @@ contract Permissioned {
         owner = _newOwner;
     }
 
-// ------------ [ pause functions ] ---------------
+// --------------- [ pause functions ] ---------------
 
     // When true, function(s) are paused
     bool public isPaused;
