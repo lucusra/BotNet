@@ -61,26 +61,31 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
 //  ----------------------------------------------------
 
     function transfer(address _to, uint _value) override external pauseFunction returns (bool success) {
-        require(users[msg.sender].creditBalance >= _value);
+        require(users[msg.sender].creditBalance >= _value, "insufficient funds, revert");
         _transfer(msg.sender, _to, _value);
         return true;
     }
     
     function transferFrom(address _from, address _to, uint _value) override external pauseFunction returns (bool success) {
-        require(_value <= users[_from].creditBalance);
-        require(_value <= users[_from].allowance[msg.sender]);
-        users[_from].allowance[msg.sender] = users[_from].allowance[msg.sender].sub(_value);
+        require(users[_from].creditBalance >= _value, "from address has insufficient funds, revert");
+        require(users[msg.sender].allowance[_from] >= _value, "insufficient allowance, revert");
+        require(users[msg.sender].allowance[_from] <= users[_from].creditBalance);
+        users[msg.sender].allowance[_from] = users[msg.sender].allowance[_from].sub(_value);
         _transfer(_from, _to, _value);
         return true;
     }
 
     function _transfer(address _from, address _to, uint256 _value) internal pauseFunction {
-        require(_to != address(0));
         if(_from == owner) {
             users[_from].creditBalance = users[_from].creditBalance.sub(_value);
             users[_to].creditBalance = users[_to].creditBalance.add(_value);
-            totalCreditsHeld = totalCreditsHeld.add(_value);
-            remainingUnheldCredits = users[owner].creditBalance; 
+            remainingUnheldCredits = users[owner].creditBalance;
+            totalCreditsHeld = totalCreditsSupply.add(remainingUnheldCredits);
+        } else if (_to == owner){
+            users[_from].creditBalance = users[_from].creditBalance.sub(_value);
+            users[_to].creditBalance = users[_to].creditBalance.add(_value);
+            remainingUnheldCredits = users[owner].creditBalance;
+            totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);
         } else {
             users[_from].creditBalance = users[_from].creditBalance.sub(_value);
             users[_to].creditBalance = users[_to].creditBalance.add(_value);
@@ -116,11 +121,10 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
         return true;
     }
     function deleteCredits(uint _amount) override external onlyOwner returns (bool success) {
-        require(totalCreditsSupply >= _amount && totalCreditsHeld > _amount, "unable to burn held tokens");
-        require(totalCreditsSupply >= totalCreditsHeld, "unable to burn held tokens");
+        require(users[owner].creditBalance >= _amount);
         users[owner].creditBalance = users[owner].creditBalance.sub(_amount);
         totalCreditsSupply = totalCreditsSupply.sub(_amount);
-        remainingUnheldCredits = users[owner].creditBalance;              
+        remainingUnheldCredits = users[owner].creditBalance;           
         emit deletedCredits(totalCreditsSupply, _amount);
         return true;
     }
