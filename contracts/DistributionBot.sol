@@ -11,6 +11,7 @@ import "./Credits.sol";
 ///@dev add decryptEnigmaPortion()
 
 contract DistributionBot is Credits {
+    Credits public credits;
 
     constructor() public  {
         uint enigmaFee = 1000;
@@ -23,7 +24,7 @@ contract DistributionBot is Credits {
     function enterEnigma() external pauseFunction returns (uint entranceFee, bool success) {
         require(users[msg.sender].creditBalance >= _enigmaFee, "insufficient funds to enter Enigma");
         require(users[msg.sender].inEnigma == false, "already in Enigma");
-        users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(_enigmaFee);
+        credits.transfer(owner, _enigmaFee);
         users[msg.sender].joinedEnigma = block.timestamp;
         users[msg.sender].leftEnigma = 0;
         users[msg.sender].inEnigma = true;
@@ -61,17 +62,15 @@ contract DistributionBot is Credits {
 
     /// @notice allows owner to decrypt funds within Enigma which then distributes to members of the Enigma equally. 
     /// @dev potentially making the users able to call this function.
-    /// @return totalDecryptedCredits       : the total amount of Credits withdrawn from the Enigma pool.
     /// @return decryptedCreditsPerPerson   : the share each member gets (calculated via: total amount of Credits divided by the amount of Engima members). 
     /// @return totalRecipients             : the total amount of Engima share recipients.
-    function decryptEnigma() external pauseFunction onlyOwner returns (uint totalDecryptedCredits, uint decryptedCreditsPerPerson, uint totalRecipients) {
+    function decryptEnigma() external pauseFunction onlyOwner returns (uint decryptedCreditsPerPerson, uint totalRecipients) {
         require(totalEnigmaParticipants != 0, "no participants in Enigma for distribution");
         uint _creditsPerPerson = (_enigmaBalance.div(enigmaParticipants.length));
-
             for(uint i = 0; enigmaParticipants.length > i; i++) {
                 address n = enigmaParticipants[i];
-                users[n].creditBalance = users[n].creditBalance.add(_creditsPerPerson);
+                credits.transferFrom(owner, n, _creditsPerPerson);
             }
-        return (_enigmaBalance, _creditsPerPerson, totalEnigmaParticipants);
+        return ( _creditsPerPerson, totalEnigmaParticipants);
     }
 }
