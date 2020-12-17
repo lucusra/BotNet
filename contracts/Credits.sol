@@ -1,4 +1,4 @@
-pragma solidity 0.6.6;
+pragma solidity 0.8.0;
 
 import "./Permissioned.sol";
 import "./CreditsInterface.sol";
@@ -9,8 +9,6 @@ import "./InfoBot.sol";
 //                      (c) The BotNet Project 2020
 //
 // ----------------------------------------------------------------------------
-
-// @upgrade - need to make sure that the supply
 
 contract Credits is CreditsInterface, Permissioned, InfoBot {
 	using SafeMath for uint;
@@ -26,14 +24,16 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
     uint256 totalCreditsSupply;                 // Credits' total supply (can be adjusted)
     uint256 public totalCreditsHeld;	        // how many Credits are in custody of users
     uint256 public remainingUnheldCredits;      // amount of credits that aren't owned
+    address payable creditsContract;            // the address that holds the total supply
 
-    constructor() public{            
+    constructor() public{    
+        creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)     
         initalCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
     	totalCreditsSupply = initalCreditsSupply;                          // total credits supply = total inital credits supply
         totalCreditsHeld = 0;                                              // credits held by users = 0
     	isPaused = false;                                                  // contract is unpaused on deployment
-        users[owner].creditBalance = totalCreditsSupply;                   // owner owns total supply
-        remainingUnheldCredits = users[owner].creditBalance;               // amount of credits that aren't owned = total supply
+        users[creditsContract].creditBalance = totalCreditsSupply;         // creditsContract owns total supply
+        remainingUnheldCredits = users[creditsContract].creditBalance;     // amount of credits that aren't owned = total supply
     }
 
 //  ----------------------------------------------------
@@ -76,12 +76,12 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
     }
 
     function _transfer(address _from, address _to, uint256 _value) internal pauseFunction {
-        if(_from == owner) {
+        if(_from == creditsContract) {
             users[_from].creditBalance = users[_from].creditBalance.sub(_value);
             users[_to].creditBalance = users[_to].creditBalance.add(_value);
             remainingUnheldCredits = users[owner].creditBalance;
             totalCreditsHeld = totalCreditsSupply.add(remainingUnheldCredits);
-        } else if (_to == owner){
+        } else if (_to == creditsContract){
             users[_from].creditBalance = users[_from].creditBalance.sub(_value);
             users[_to].creditBalance = users[_to].creditBalance.add(_value);
             remainingUnheldCredits = users[owner].creditBalance;
@@ -120,10 +120,10 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
         return true;
     }
     function deleteCredits(uint _amount) override external onlyOwner returns (bool success) {
-        require(users[owner].creditBalance >= _amount);
-        users[owner].creditBalance = users[owner].creditBalance.sub(_amount);
+        require(users[creditsContract].creditBalance >= _amount);
+        users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_amount);
         totalCreditsSupply = totalCreditsSupply.sub(_amount);
-        remainingUnheldCredits = users[owner].creditBalance;    
+        remainingUnheldCredits = users[creditsContract].creditBalance;    
         emit deletedCredits(totalCreditsSupply, _amount);
         return true;
     }
