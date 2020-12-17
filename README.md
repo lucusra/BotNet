@@ -7,6 +7,9 @@ I'm currently thinking about converting to an ERC1155 standard so that I could i
 
 This project isn't intended to be the next world currency, just a project I enjoy building and learning from. If you decide to use my project, I hope the best for your experience. If you have any questions/requests, please comment on this repo! 
 
+## Workflow Diagram
+![Botnet Workflow Diagram](https://github.com/lucusra/BotNet/blob/main/BotNet%20Workflow%20Diagram.PNG)
+
 ## Contracts & Functionalities
 ### InfoBot 📋
 Acts as a storage, containing all the data of each user.
