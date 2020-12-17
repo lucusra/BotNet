@@ -1,186 +1,137 @@
 pragma solidity 0.6.6;
 
-import "./Credits.sol";
+import "./Permissioned.sol";
+import "./CreditsInterface.sol";
+import "./InfoBot.sol";
 
-/// @title Inital Token Offering (ITO)
-/// @dev ITO is the contract for managing the Credits' crowdsale
-// allowing investors to purchase Credits for Ether. 
+// ----------------------------------------------------------------------------
+//
+//                      (c) The BotNet Project 2020
+//
+// ----------------------------------------------------------------------------
 
-// TO DO...
-// [ ] MAKE INTO A SLOW DRIP INSTEAD OF EVERYONE GETS AT ONCE (i.e. 10% day 1, 40% end of week 1, 40% end of week 2)
-// [X] MAKE TOKENS CLAIMABLE FOR CREDITS  
+// @upgrade - need to make sure that the supply
 
-contract CreditsITO is Credits {
-    using SafeMath for uint256;
+contract Credits is CreditsInterface, Permissioned, InfoBot {
+	using SafeMath for uint;
 
-    Credits public credits;                               // The token being sold
+//  ----------------------------------------------------
+//               Variables + Constructor
+//  ----------------------------------------------------
 
-    address payable public ito_Collector;                 // Address where funds are transfered to
-    uint256 public conversionRate_EthToCredibytes;        // How many credibytes a buyer gets per eth.
-    uint256 public conversionRate_CredibytesToCredits;    // How many credits per credibytes (always a multiplier)
-    uint256 public totalEthRaised;                        // Amount of eth raised
-    uint256 public minEthRequirement;                     // minimum amount of eth required to buy credibytes
+	string _name = "Credits";
+    string _symbol = "CRDTS";
+    uint8 _decimals = 18;                       
+    uint256 initalCreditsSupply;                // supply upon deployment
+    uint256 totalCreditsSupply;                 // Credits' total supply (can be adjusted)
+    uint256 public totalCreditsHeld;	        // how many Credits are in custody of users
+    uint256 public remainingUnheldCredits;      // amount of credits that aren't owned
 
-    mapping(address => uint256) public itoCreditsPurchased;
-    mapping(address => bool) public hasParticipated;
-    address[] public participants;
+    constructor() public{            
+        initalCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
+    	totalCreditsSupply = initalCreditsSupply;                          // total credits supply = total inital credits supply
+        totalCreditsHeld = 0;                                              // credits held by users = 0
+    	isPaused = false;                                                  // contract is unpaused on deployment
+        users[owner].creditBalance = totalCreditsSupply;                   // owner owns total supply
+        remainingUnheldCredits = users[owner].creditBalance;               // amount of credits that aren't owned = total supply
+    }
+
+//  ----------------------------------------------------
+//                   View Functions 
+//  ----------------------------------------------------
+
+    function symbol() override external view returns (string memory) {
+        return _symbol;
+    }
+    function name() override external view returns (string memory) {
+        return _name;
+    }
+    function decimals() override external view returns (uint8) {
+        return _decimals;
+    }
+    function totalSupply() override external view returns (uint) {
+    	return totalCreditsSupply;	
+    }
+    function balanceOf(address tokenOwner) override external view returns (uint balance) {
+    	return users[tokenOwner].creditBalance;
+    }
+
+//  ----------------------------------------------------
+//                 Transfer Functions 
+//  ----------------------------------------------------
+
+    function transfer(address _to, uint _value) override external pauseFunction returns (bool success) {
+        require(users[msg.sender].creditBalance >= _value, "insufficient funds, revert");
+        _transfer(msg.sender, _to, _value);
+        return true;
+    }
     
-    /// @notice Event for token purchase logging
-    event CredibytesPurchase(
-      address indexed purchaser,     // who paid for the credits
-      address indexed beneficiary,   // who received the credits
-      uint256 value,                 // ethers paid for credits
-      uint256 amount                 // amount of credits purchased
-    );
-    event CredibytesRedeption(
-      address indexed redeemer,
-      uint256 amount,
-      uint256 date
-    );
+    function transferFrom(address _from, address _to, uint _value) override external pauseFunction returns (bool success) {
+        require(users[_from].creditBalance >= _value, "from address has insufficient funds, revert");
+        require(users[msg.sender].allowance[_from] >= _value, "insufficient allowance, revert");
+        require(users[msg.sender].allowance[_from] <= users[_from].creditBalance);
+        users[msg.sender].allowance[_from] = users[msg.sender].allowance[_from].sub(_value);
+        _transfer(_from, _to, _value);
+        return true;
+    }
 
-   constructor() public {
-    ito_Collector = 0x3cdEb927aEA88104c459369113F36408de0bADB9;
-    deploymentDate = now;
-    timelockActivationDate = deploymentDate.add(2 weeks);
-    hasFinalised = false;
-    conversionRate_EthToCredibytes = 10000;
-    conversionRate_CredibytesToCredits = 3;
-    minEthRequirement = 0 ether; 
-  }
-
-//  ----------------------------------------------------
-//                      Dashboard 
-//  ----------------------------------------------------
-
-
-  /// @notice Allows owner to update the eth to credibytes conversion rate.
-  /// @param _newRate new eth to credibytes conversion rate.
-  function setRate_EthToCredibytes(uint _newRate) public onlyOwner {
-    conversionRate_EthToCredibytes = _newRate;
-  }
-
-  /// @notice Allows owner to update the credibytes to credits conversion rate.
-  /// @param _newRate new credibytes to credits conversion rate.
-  function setRate_CredibytesToCredits(uint _newRate) public onlyOwner {
-    conversionRate_CredibytesToCredits = _newRate;
-  }
-
-  /// @notice Allows owner to update the minimum amount of eth to partake in the ITO.
-  /// @param _newMinimumRequirement the new minimum amount of eth to partake in the ITO.
-  function updateMinimumRequirement(uint _newMinimumRequirement) public onlyOwner {
-      minEthRequirement = _newMinimumRequirement;
-  }
-
-  /// @notice Allows owner to finish the ITO before the timelock.
-  function finalise() public onlyOwner {
-    hasFinalised = true;
-  }
+    function _transfer(address _from, address _to, uint256 _value) internal pauseFunction {
+        if(_from == owner) {
+            users[_from].creditBalance = users[_from].creditBalance.sub(_value);
+            users[_to].creditBalance = users[_to].creditBalance.add(_value);
+            remainingUnheldCredits = users[owner].creditBalance;
+            totalCreditsHeld = totalCreditsSupply.add(remainingUnheldCredits);
+        } else if (_to == owner){
+            users[_from].creditBalance = users[_from].creditBalance.sub(_value);
+            users[_to].creditBalance = users[_to].creditBalance.add(_value);
+            remainingUnheldCredits = users[owner].creditBalance;
+            totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);
+        } else {
+            users[_from].creditBalance = users[_from].creditBalance.sub(_value);
+            users[_to].creditBalance = users[_to].creditBalance.add(_value);
+        }
+        emit Transfer(msg.sender, _to, _value);
+    }
 
 //  ----------------------------------------------------
-//                      Timelock 
+//                 Approve + Allowance 
 //  ----------------------------------------------------
 
-  // The block when the contract locks/stops functioning.
-  uint256 public timelockActivationDate;
-  uint256 public deploymentDate;
+    function approve(address _spender, uint _value) override external pauseFunction returns (bool success) {
+    	users[msg.sender].allowance[_spender] = _value;
+    	emit Approval(msg.sender, _spender, _value);
+    	return true;
+    }
 
-  bool public hasFinalised;
-
-  // If: now <= timelockActivationDate, continue functionality of ITO.
-  modifier ito_Timelock {
-      require(now <= timelockActivationDate, "ITO phase is over: contract locked & no longer functional.");
-      require(hasFinalised != true, "The owner has finalised the ITO.");
-      _;
-  }
-
-  modifier canRedeem {
-      require(now >= timelockActivationDate, "ITO phase is currently underway: can redeem once finalised or timelock has activated.");
-      require(hasFinalised == true, "The owner not finalised the ITO.");
-      _;
-  }
+    function viewAllowance(address tokenOwner, address spender) override external pauseFunction view returns (uint remaining) {
+        return users[tokenOwner].allowance[spender];
+    }
 
 //  ----------------------------------------------------
-//                 External Functions 
+//                 Mint + Burn Credits 
 //  ----------------------------------------------------
 
-  // Allows the user to conver their credibytes to credits.
-  function convertCredibytesToCredits() canRedeem public returns (uint256 convertedAmount, bool sucess){
-    require(users[msg.sender].credibyteBalance != 0, "No credibytes remaining.");
-    uint256 _convertedAmount = convertedCredibytes();                       // checks how many credits user will receive
-    commenceConversion(_convertedAmount);                                   // transfers credits to user
-    emit CredibytesRedeption(msg.sender, _convertedAmount, now);
-    return (_convertedAmount, true);
-  }
+    function generateCredits(address _to, uint _amount) override external onlyOwner returns (bool success) {
+        users[_to].creditBalance = users[_to].creditBalance.add(_amount);
+        totalCreditsSupply = totalCreditsSupply.add(_amount);
+        totalCreditsHeld = totalCreditsHeld.add(_amount);
+        remainingUnheldCredits = users[owner].creditBalance;              
+        emit generatedCredits(totalCreditsSupply, _to, _amount);
+        return true;
+    }
+    function deleteCredits(uint _amount) override external onlyOwner returns (bool success) {
+        require(users[owner].creditBalance >= _amount);
+        users[owner].creditBalance = users[owner].creditBalance.sub(_amount);
+        totalCreditsSupply = totalCreditsSupply.sub(_amount);
+        remainingUnheldCredits = users[owner].creditBalance;    
+        emit deletedCredits(totalCreditsSupply, _amount);
+        return true;
+    }
 
-  // Transfers wei to designated collector & transfers credits to beneficiary. 
-  function buyCredibytes_forETH(address _beneficiary) ito_Timelock public payable {
-    uint256 ethAmount = msg.value;                                                              // ethAmount becomes msg.value
-    
-    _preValidatePurchase(_beneficiary, ethAmount);                                              // validates tx isn't sending 0 wei
-    uint256 crdtsAmount = _getCredibyteAmount(ethAmount);                                       // calculates the amount of credits to be created
-    
-    _forwardFunds();                                                                            // transfers eth to itoCollector
-    totalEthRaised = totalEthRaised.add(ethAmount);                                             // updates state: totalEthRaised
-
-    _processPurchase(_beneficiary, crdtsAmount);                                                // transfers credits to beneficiary
-    itoCreditsPurchased[_beneficiary] = itoCreditsPurchased[_beneficiary].add(crdtsAmount);     // updates balance of credits purchased
-
-      if(hasParticipated[_beneficiary] != true) {                                               // adds users to hasParticipated if they haven't
-        participants.push(_beneficiary);
-        hasParticipated[_beneficiary] = true;
-      }                         
-    emit CredibytesPurchase(msg.sender, _beneficiary, ethAmount, crdtsAmount); 
-  }
-
-  // If unlocked, call buyCredits_forWei.
-  // If locked, revert tx.
-  receive() override external payable {
-    if(now <= timelockActivationDate) {
-      buyCredibytes_forETH(msg.sender); 
-    } else { revert(); }
-  }
-
-//  ----------------------------------------------------
-//     convertCredibytesToCredits Internal Functions 
-//  ----------------------------------------------------
-
-  // calculates how many credits the user will be receiving according to their creditbytes balance
-  function convertedCredibytes() view internal returns(uint256) {
-    return users[msg.sender].credibyteBalance.mul(conversionRate_CredibytesToCredits);
-  }
-
-  function commenceConversion(uint256 _convertedAmount) internal {
-    users[msg.sender].credibyteBalance = 0;                                                     // sets user's credibyte balance to 0
-    users[owner].creditBalance = users[owner].creditBalance.sub(_convertedAmount);              // deducts credits from owner wallet
-    remainingUnheldCredits = users[owner].creditBalance;                                        // updates remaining unheld credits
-    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);    // gives user converted credits amount
-    totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                          // updates total credits held
-  }
-
-//  ----------------------------------------------------
-//       buyCredibytes_forETH Internal Functions 
-//  ----------------------------------------------------
-
-  function _preValidatePurchase(address _beneficiary, uint256 _ethAmount) ito_Timelock view internal  {
-    require(_beneficiary != address(0), "Unable to purchase credibytes for deployer");
-    require(msg.value >= minEthRequirement, "Does not meet the minimum purchasing requirement - refer to minEthRequirement.");
-  }
-
-  function _getCredibyteAmount(uint256 _ethAmount) ito_Timelock internal view returns (uint256) {
-    return ((_ethAmount.mul(conversionRate_EthToCredibytes)).div(1000000000000000000));
-  }
-
-  // Calls _deliverTokens.
-  function _processPurchase(address _beneficiary, uint256 _crdtsAmount) ito_Timelock internal {
-    _deliverCredibytes(_beneficiary, _crdtsAmount);
-  }
-
-  // Transfers credits from credits.sol (the holder of the supply).
-  function _deliverCredibytes(address _beneficiary, uint256 _crdtsAmount) ito_Timelock internal {
-    users[_beneficiary].credibyteBalance = users[_beneficiary].credibyteBalance.add(_crdtsAmount);
-  }
-  
-  function _forwardFunds() ito_Timelock internal {
-    ito_Collector.transfer(msg.value);
-  }
+    // ------------------------------------------------------------------------
+    //                          Don't accept ETH
+    // ------------------------------------------------------------------------
+    receive () external payable {
+        revert();
+    }
 }
