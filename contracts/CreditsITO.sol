@@ -1,8 +1,6 @@
 pragma solidity 0.6.6;
 
 import "./Credits.sol";
-import "./Permissioned.sol";
-import "./InfoBot.sol";
 
 /// @title Inital Token Offering (ITO)
 /// @dev ITO is the contract for managing the Credits' crowdsale
@@ -12,7 +10,7 @@ import "./InfoBot.sol";
 // [ ] MAKE INTO A SLOW DRIP INSTEAD OF EVERYONE GETS AT ONCE (i.e. 10% day 1, 40% end of week 1, 40% end of week 2)
 // [X] MAKE TOKENS CLAIMABLE FOR CREDITS  
 
-contract CreditsITO is Permissioned, InfoBot {
+contract CreditsITO is Credits {
     using SafeMath for uint256;
 
     Credits public credits;                               // The token being sold
@@ -21,6 +19,7 @@ contract CreditsITO is Permissioned, InfoBot {
     uint256 public conversionRate_EthToCredibytes;        // How many credibytes a buyer gets per eth.
     uint256 public conversionRate_CredibytesToCredits;    // How many credits per credibytes (always a multiplier)
     uint256 public totalEthRaised;                        // Amount of eth raised
+    uint256 public minEthRequirement;                     // minimum amount of eth required to buy credibytes
 
     mapping(address => uint256) public itoCreditsPurchased;
     mapping(address => bool) public hasParticipated;
@@ -46,6 +45,7 @@ contract CreditsITO is Permissioned, InfoBot {
     hasFinalised = false;
     conversionRate_EthToCredibytes = 10000;
     conversionRate_CredibytesToCredits = 3;
+    minEthRequirement = 0 ether; 
   }
 
 //  ----------------------------------------------------
@@ -61,8 +61,14 @@ contract CreditsITO is Permissioned, InfoBot {
 
   /// @notice Allows owner to update the credibytes to credits conversion rate.
   /// @param _newRate new credibytes to credits conversion rate.
-  function setRate_CredibytesToCredits (uint _newRate) public onlyOwner {
+  function setRate_CredibytesToCredits(uint _newRate) public onlyOwner {
     conversionRate_CredibytesToCredits = _newRate;
+  }
+
+  /// @notice Allows owner to update the minimum amount of eth to partake in the ITO.
+  /// @param _newMinimumRequirement the new minimum amount of eth to partake in the ITO.
+  function updateMinimumRequirement(uint _newMinimumRequirement) public onlyOwner {
+      minEthRequirement = _newMinimumRequirement;
   }
 
   /// @notice Allows owner to finish the ITO before the timelock.
@@ -99,7 +105,7 @@ contract CreditsITO is Permissioned, InfoBot {
 
   // Allows the user to conver their credibytes to credits.
   function convertCredibytesToCredits() canRedeem public returns (uint256 convertedAmount, bool sucess){
-    require(users[msg.sender].credibyteBalance != 0, "No credibytes remaining");
+    require(users[msg.sender].credibyteBalance != 0, "No credibytes remaining.");
     uint256 _convertedAmount = convertedCredibytes();                       // checks how many credits user will receive
     commenceConversion(_convertedAmount);                                   // transfers credits to user
     emit CredibytesRedeption(msg.sender, _convertedAmount, now);
@@ -128,9 +134,10 @@ contract CreditsITO is Permissioned, InfoBot {
 
   // If unlocked, call buyCredits_forWei.
   // If locked, revert tx.
-  receive() external payable {
-    require(now <= timelockActivationDate, "ITO phase is over: contract locked & no longer functional.");
-      buyCredibytes_forETH(msg.sender);   
+  receive() override external payable {
+    if(now <= timelockActivationDate) {
+      buyCredibytes_forETH(msg.sender); 
+    } else { revert(); }
   }
 
 //  ----------------------------------------------------
@@ -143,9 +150,11 @@ contract CreditsITO is Permissioned, InfoBot {
   }
 
   function commenceConversion(uint256 _convertedAmount) internal {
-    users[msg.sender].credibyteBalance = 0;
-    users[owner].creditBalance = users[owner].creditBalance.sub(_convertedAmount);
-    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);
+    users[msg.sender].credibyteBalance = 0;                                                     // sets user's credibyte balance to 0
+    users[owner].creditBalance = users[owner].creditBalance.sub(_convertedAmount);              // deducts credits from owner wallet
+    remainingUnheldCredits = users[owner].creditBalance;                                        // updates remaining unheld credits
+    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);    // gives user converted credits amount
+    totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                          // updates total credits held
   }
 
 //  ----------------------------------------------------
@@ -153,8 +162,8 @@ contract CreditsITO is Permissioned, InfoBot {
 //  ----------------------------------------------------
 
   function _preValidatePurchase(address _beneficiary, uint256 _ethAmount) ito_Timelock view internal  {
-    require(_beneficiary != address(0));
-    require(_ethAmount != 0);
+    require(_beneficiary != address(0), "Unable to purchase credibytes for deployer");
+    require(msg.value >= minEthRequirement, "Does not meet the minimum purchasing requirement - refer to minEthRequirement.");
   }
 
   function _getCredibyteAmount(uint256 _ethAmount) ito_Timelock internal view returns (uint256) {
