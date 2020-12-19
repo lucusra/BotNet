@@ -13,15 +13,15 @@ import "./Credits.sol";
 contract CreditsITO is Credits {
     using SafeMath for uint256;
 
-    Credits public credits;                               // The token being sold
+    Credits credits;                                      // The token being sold
 
-    address payable public ito_Collector;                 // Address where funds are transfered to
+    address payable ito_Collector;                        // Where eth funds are transfered to
     uint256 public conversionRate_EthToCredibytes;        // How many credibytes a buyer gets per eth.
     uint256 public conversionRate_CredibytesToCredits;    // How many credits per credibytes (always a multiplier)
     uint256 public totalEthRaised;                        // Amount of eth raised
     uint256 public minEthRequirement;                     // minimum amount of eth required to buy credibytes
 
-    mapping(address => uint256) public itoCreditsPurchased;
+    mapping(address => uint256) public credibyteBalance;
     mapping(address => bool) public hasParticipated;
     address[] public participants;
     
@@ -38,8 +38,8 @@ contract CreditsITO is Credits {
       uint256 date
     );
 
-   constructor() public {
-    ito_Collector = 0x3cdEb927aEA88104c459369113F36408de0bADB9;
+   constructor(address payable _itoCollector) public {
+    ito_Collector = _itoCollector;
     deploymentDate = now;
     timelockActivationDate = deploymentDate.add(2 weeks);
     hasFinalised = false;
@@ -113,30 +113,30 @@ contract CreditsITO is Credits {
   }
 
   // Transfers wei to designated collector & transfers credits to beneficiary. 
-  function buyCredibytes_forETH(address _beneficiary) ito_Timelock public payable {
+  function buyCredibytes_withETH(address _beneficiary) ito_Timelock public payable {
     uint256 ethAmount = msg.value;                                                              // ethAmount becomes msg.value
     
     _preValidatePurchase(_beneficiary, ethAmount);                                              // validates tx isn't sending 0 wei
-    uint256 crdtsAmount = _getCredibyteAmount(ethAmount);                                       // calculates the amount of credits to be created
+    uint256 credibyteAmount = _getCredibyteAmount(ethAmount);                                   // calculates the amount of credits to be created
     
-    _forwardFunds();                                                                            // transfers eth to itoCollector
+    _forwardFunds(ethAmount);                                                                   // transfers eth to itoCollector
     totalEthRaised = totalEthRaised.add(ethAmount);                                             // updates state: totalEthRaised
 
-    _processPurchase(_beneficiary, crdtsAmount);                                                // transfers credits to beneficiary
-    itoCreditsPurchased[_beneficiary] = itoCreditsPurchased[_beneficiary].add(crdtsAmount);     // updates balance of credits purchased
+    _processPurchase(_beneficiary, credibyteAmount);                                            // transfers credits to beneficiary
+    credibyteBalance[_beneficiary] = credibyteBalance[_beneficiary].add(credibyteAmount);       // updates balance of credits purchased
 
       if(hasParticipated[_beneficiary] != true) {                                               // adds users to hasParticipated if they haven't
         participants.push(_beneficiary);
         hasParticipated[_beneficiary] = true;
       }                         
-    emit CredibytesPurchase(msg.sender, _beneficiary, ethAmount, crdtsAmount); 
+    emit CredibytesPurchase(msg.sender, _beneficiary, ethAmount, credibyteAmount); 
   }
 
   // If unlocked, call buyCredits_forWei.
   // If locked, revert tx.
   receive() override external payable {
     if(now <= timelockActivationDate) {
-      buyCredibytes_forETH(msg.sender); 
+      buyCredibytes_withETH(msg.sender); 
     } else { revert(); }
   }
 
@@ -150,11 +150,11 @@ contract CreditsITO is Credits {
   }
 
   function commenceConversion(uint256 _convertedAmount) internal {
-    users[msg.sender].credibyteBalance = 0;                                                     // sets user's credibyte balance to 0
-    users[owner].creditBalance = users[owner].creditBalance.sub(_convertedAmount);              // deducts credits from owner wallet
-    remainingUnheldCredits = users[owner].creditBalance;                                        // updates remaining unheld credits
-    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);    // gives user converted credits amount
-    totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                          // updates total credits held
+    users[msg.sender].credibyteBalance = 0;                                                               // sets user's credibyte balance to 0
+    users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_convertedAmount);    // deducts credits from owner wallet
+    remainingUnheldCredits = users[creditsContract].creditBalance;                                        // updates remaining unheld credits
+    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);              // gives user converted credits amount
+    totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                                    // updates total credits held
   }
 
 //  ----------------------------------------------------
@@ -180,7 +180,7 @@ contract CreditsITO is Credits {
     users[_beneficiary].credibyteBalance = users[_beneficiary].credibyteBalance.add(_crdtsAmount);
   }
   
-  function _forwardFunds() ito_Timelock internal {
-    ito_Collector.transfer(msg.value);
+  function _forwardFunds(uint256 ethAmount) ito_Timelock internal {
+    ito_Collector.transfer(ethAmount);
   }
 }
