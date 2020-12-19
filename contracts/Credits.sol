@@ -1,8 +1,8 @@
-pragma solidity 0.8.0;
+pragma solidity 0.6.6;
 
 import "./Permissioned.sol";
 import "./CreditsInterface.sol";
-import "./InfoBot.sol";
+import "./DataBot.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -10,7 +10,7 @@ import "./InfoBot.sol";
 //
 // ----------------------------------------------------------------------------
 
-contract Credits is CreditsInterface, Permissioned, InfoBot {
+contract Credits is CreditsInterface, Permissioned, DataBot {
 	using SafeMath for uint;
 
 //  ----------------------------------------------------
@@ -26,7 +26,7 @@ contract Credits is CreditsInterface, Permissioned, InfoBot {
     uint256 public remainingUnheldCredits;      // amount of credits that aren't owned
     address payable creditsContract;            // the address that holds the total supply
 
-    constructor() public{    
+    constructor() public {    
         creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)     
         initalCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
     	totalCreditsSupply = initalCreditsSupply;                          // total credits supply = total inital credits supply
