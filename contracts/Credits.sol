@@ -18,7 +18,7 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
 //               Variables + Constructor
 //  ----------------------------------------------------
 
-	string _name = "Credits";
+    string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
     uint256 public initialCreditsSupply;        // supply upon deployment
@@ -53,7 +53,7 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
     function totalSupply() override external view returns (uint) {
     	return totalCreditsSupply;	
     }
-    function balanceOf(address tokenOwner) override external view returns (uint balance) {
+    function balanceOf(address tokenOwner) override external view returns (uint creditBalance) {
     	return users[tokenOwner].creditBalance;
     }
 
