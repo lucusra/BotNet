@@ -31,6 +31,7 @@ contract DataBot {
         uint256 redemptionCounter;                  // the amount of times the user has redeemed 
         uint256 remainingTimeUntilNextConversion;
         bool fullyConverted;                        // whether the user has converted all
+        bool hasParticipatedInITO;
 
         // ----------Staking----------
         uint256 _initalEncryptedBalance;            // inital encrypted balance deposit for each hack
