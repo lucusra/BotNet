@@ -1,4 +1,5 @@
-pragma solidity 0.6.6;
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
 
 import "./Credits.sol";
 
@@ -7,7 +8,7 @@ import "./Credits.sol";
 // allowing investors to purchase Credits for Ether. 
 
 // TO DO...
-// [ ] MAKE INTO A SLOW DRIP INSTEAD OF EVERYONE GETS AT ONCE (i.e. 10% day 1, 40% end of week 1, 40% end of week 2)
+// [X] MAKE INTO A SLOW DRIP INSTEAD OF EVERYONE GETS AT ONCE (i.e. 25% at the start of each month for 4 months)
 // [X] MAKE TOKENS CLAIMABLE FOR CREDITS  
 
 contract CreditsITO is Credits {
@@ -20,17 +21,18 @@ contract CreditsITO is Credits {
     uint256 public conversionRate_CredibytesToCredits;    // How many credits per credibytes (always a multiplier)
     uint256 public totalEthRaised;                        // Amount of eth raised
     uint256 public minEthRequirement;                     // minimum amount of eth required to buy credibytes
+    
+    address payable itoContract = address(this);
+    uint256 public remaining_credibyteSupply;
 
-    mapping(address => uint256) public credibyteBalance;
-    mapping(address => bool) public hasParticipated;
     address[] public participants;
     
     /// @notice Event for token purchase logging
     event CredibytesPurchase(
       address indexed purchaser,     // who paid for the credits
       address indexed beneficiary,   // who received the credits
-      uint256 value,                 // ethers paid for credits
-      uint256 amount                 // amount of credits purchased
+      uint256 ethAmount,             // ethers paid for credits
+      uint256 credibyteAmount        // amount of credits purchased
     );
     event CredibytesRedeption(
       address indexed redeemer,
@@ -38,14 +40,17 @@ contract CreditsITO is Credits {
       uint256 date
     );
 
-   constructor(address payable _itoCollector) public {
+   constructor(address payable _itoCollector) {
     ito_Collector = _itoCollector;
-    deploymentDate = now;
-    timelockActivationDate = deploymentDate.add(2 weeks);
+    deploymentDate = block.timestamp;
+    timelockActivationDate = deploymentDate + 4 weeks;
     hasFinalised = false;
     conversionRate_EthToCredibytes = 10000;
     conversionRate_CredibytesToCredits = 3;
-    minEthRequirement = 0 ether; 
+    minEthRequirement = 1 ether;
+    credits.approve(itoContract, 300000 * 10**18);
+    credits.transferFrom(creditsContract, itoContract, 300000 * 10**18);
+    remaining_credibyteSupply = users[itoContract].creditBalance.div(conversionRate_CredibytesToCredits);
   }
 
 //  ----------------------------------------------------
@@ -88,15 +93,19 @@ contract CreditsITO is Credits {
 
   // If: now <= timelockActivationDate, continue functionality of ITO.
   modifier ito_Timelock {
-      require(now <= timelockActivationDate, "ITO phase is over: contract locked & no longer functional.");
-      require(hasFinalised != true, "The owner has finalised the ITO.");
-      _;
+    require(
+        block.timestamp <= timelockActivationDate || hasFinalised != true, 
+        "ITO phase is over: contract locked & no longer functional."
+      );
+    _;
   }
 
   modifier canRedeem {
-      require(now >= timelockActivationDate, "ITO phase is currently underway: can redeem once finalised or timelock has activated.");
-      require(hasFinalised == true, "The owner not finalised the ITO.");
-      _;
+    require(
+        block.timestamp >= timelockActivationDate || hasFinalised == true, 
+        "ITO phase is currently underway: can redeem once finalised or timelock has activated."
+      );
+    _;
   }
 
 //  ----------------------------------------------------
@@ -106,10 +115,10 @@ contract CreditsITO is Credits {
   // Allows the user to conver their credibytes to credits.
   function convertCredibytesToCredits() canRedeem public returns (uint256 convertedAmount, bool sucess){
     require(users[msg.sender].credibyteBalance != 0, "No credibytes remaining.");
-    uint256 _convertedAmount = convertedCredibytes();                       // checks how many credits user will receive
-    commenceConversion(_convertedAmount);                                   // transfers credits to user
-    emit CredibytesRedeption(msg.sender, _convertedAmount, now);
-    return (_convertedAmount, true);
+    uint256 _conversionAmount = validateConversion();                                           // checks how many credits user will receive
+    commenceConversion(_conversionAmount);                                                      // transfers credits to user
+    emit CredibytesRedeption(msg.sender, _conversionAmount, block.timestamp);
+    return (_conversionAmount, true);
   }
 
   // Transfers wei to designated collector & transfers credits to beneficiary. 
@@ -119,23 +128,25 @@ contract CreditsITO is Credits {
     _preValidatePurchase(_beneficiary, ethAmount);                                              // validates tx isn't sending 0 wei
     uint256 credibyteAmount = _getCredibyteAmount(ethAmount);                                   // calculates the amount of credits to be created
     
-    _forwardFunds(ethAmount);                                                                   // transfers eth to itoCollector
+    _forwardFunds(ethAmount);                                                                    // transfers eth to itoCollector
     totalEthRaised = totalEthRaised.add(ethAmount);                                             // updates state: totalEthRaised
 
     _processPurchase(_beneficiary, credibyteAmount);                                            // transfers credits to beneficiary
-    credibyteBalance[_beneficiary] = credibyteBalance[_beneficiary].add(credibyteAmount);       // updates balance of credits purchased
 
-      if(hasParticipated[_beneficiary] != true) {                                               // adds users to hasParticipated if they haven't
+      if(users[_beneficiary].hasParticipatedInITO != true) {                                    // adds users to hasParticipated if they haven't
         participants.push(_beneficiary);
-        hasParticipated[_beneficiary] = true;
+        users[_beneficiary].hasParticipatedInITO = true;
       }                         
     emit CredibytesPurchase(msg.sender, _beneficiary, ethAmount, credibyteAmount); 
   }
 
-  // If unlocked, call buyCredits_forWei.
-  // If locked, revert tx.
+  function viewCredibyeBalance(address user) external view returns (uint256 _credibyteBalance) {
+    return users[user].credibyteBalance;
+  }
+
+  // If unlocked, call buyCredits_forWei || If locked, revert tx.
   receive() override external payable {
-    if(now <= timelockActivationDate) {
+    if(block.timestamp <= timelockActivationDate) {
       buyCredibytes_withETH(msg.sender); 
     } else { revert(); }
   }
@@ -149,38 +160,95 @@ contract CreditsITO is Credits {
     return users[msg.sender].credibyteBalance.mul(conversionRate_CredibytesToCredits);
   }
 
-  function commenceConversion(uint256 _convertedAmount) internal {
-    users[msg.sender].credibyteBalance = 0;                                                               // sets user's credibyte balance to 0
-    users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_convertedAmount);    // deducts credits from owner wallet
-    remainingUnheldCredits = users[creditsContract].creditBalance;                                        // updates remaining unheld credits
-    users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_convertedAmount);              // gives user converted credits amount
-    totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                                    // updates total credits held
+  function validateConversion() internal 
+    returns(
+      uint256 currentCredibyteConversion 
+    ) {
+    require (
+      users[msg.sender].remainingTimeUntilNextConversion <= block.timestamp || users[msg.sender].redemptionCounter == 0,
+      "Error: Must wait the remaining time until next redeption."
+    );
+    require (
+      users[msg.sender].credibyteBalance != 0,
+      "Error: Insufficient credibyte balance to redeem."
+    );
+      // if(users[msg.sender].credibyteBalance.mod(4) == 0) {
+        if(users[msg.sender].redemptionCounter == 0) {
+          users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);       // adds 1 onto the user's current redemption counter
+          users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;         // adds 1 month until user's next redemption activation
+          return users[msg.sender].credibyteBalance.div(4);                                       // i.e. balance = 1000, calculates 250
+        } 
+          else if (users[msg.sender].redemptionCounter == 1) {
+            users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
+            users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;       // adds 1 month until user's next redemption activation
+            return users[msg.sender].credibyteBalance.div(3);                                     // i.e. balance = 750, calculates 250 
+        } 
+          else if (users[msg.sender].redemptionCounter == 2) {
+            users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
+            users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;       // adds 1 month until user's next redemption activation
+            return users[msg.sender].credibyteBalance.div(2);                                     // i.e. balance = 500, calculates 250  
+        } 
+          else if (users[msg.sender].redemptionCounter == 3) {
+            users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
+            users[msg.sender].remainingTimeUntilNextConversion = 0;     
+            users[msg.sender].fullyConverted = true;
+            return users[msg.sender].credibyteBalance;                                            // i.e. balance = 250, calculates remaining       
+        }
+      // } else {
+      //     users[msg.sender].fullyConverted = true;
+      //     return currentCredibyteConversion = users[msg.sender].credibyteBalance;      
+      // }
+    }
+
+  function commenceConversion(uint256 _conversionAmount) internal {
+    users[msg.sender].credibyteBalance = 0;                                                                  // sets user's credibyte balance to 0
+    credits.approve(msg.sender, _conversionAmount);
+    credits.transferFrom(creditsContract, msg.sender, _conversionAmount);                                    // transfers credits from to caller
+    // users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_conversionAmount);   // deducts credits from owner wallet
+    // remainingUnheldCredits = users[creditsContract].creditBalance;                                        // updates remaining unheld credits
+    // users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_conversionAmount);             // gives user converted credits amount
+    // totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);                                    // updates total credits held
   }
 
 //  ----------------------------------------------------
 //       buyCredibytes_forETH Internal Functions 
 //  ----------------------------------------------------
 
-  function _preValidatePurchase(address _beneficiary, uint256 _ethAmount) ito_Timelock view internal  {
-    require(_beneficiary != address(0), "Unable to purchase credibytes for deployer");
-    require(msg.value >= minEthRequirement, "Does not meet the minimum purchasing requirement - refer to minEthRequirement.");
+  function _preValidatePurchase(address _beneficiary, uint256 _ethAmount) ito_Timelock view internal {
+    require(
+        remaining_credibyteSupply >= (_ethAmount.mul(conversionRate_EthToCredibytes)).div(1000000000000000000), 
+        "insufficent remaining credibyte supply to purchase, check remaining supply and adjust purchase amount."
+      );
+    require(
+        _beneficiary != address(0),
+        "Unable to purchase credibytes for deployer"
+      );
+    require(
+        _ethAmount >= minEthRequirement, 
+        "Does not meet the minimum purchasing requirement - refer to minEthRequirement."
+      );
   }
 
   function _getCredibyteAmount(uint256 _ethAmount) ito_Timelock internal view returns (uint256) {
-    return ((_ethAmount.mul(conversionRate_EthToCredibytes)).div(1000000000000000000));
+    return ((_ethAmount.mul(conversionRate_EthToCredibytes)).div(1 ether));
+  }
+
+  // Transfers eth (msg.value) to ito_Collector
+  function _forwardFunds(uint256 ethAmount) ito_Timelock internal {
+    ito_Collector.transfer(ethAmount);
   }
 
   // Calls _deliverTokens.
-  function _processPurchase(address _beneficiary, uint256 _crdtsAmount) ito_Timelock internal {
-    _deliverCredibytes(_beneficiary, _crdtsAmount);
+  function _processPurchase(address _beneficiary, uint256 _credibyteAmount) ito_Timelock internal {
+    _deliverCredibytes(_beneficiary, _credibyteAmount);
   }
 
-  // Transfers credits from credits.sol (the holder of the supply).
-  function _deliverCredibytes(address _beneficiary, uint256 _crdtsAmount) ito_Timelock internal {
-    users[_beneficiary].credibyteBalance = users[_beneficiary].credibyteBalance.add(_crdtsAmount);
-  }
-  
-  function _forwardFunds(uint256 ethAmount) ito_Timelock internal {
-    ito_Collector.transfer(ethAmount);
+  // Updates credibyte balance
+  function _deliverCredibytes(address _beneficiary, uint256 _credibyteAmount) ito_Timelock internal {
+    users[_beneficiary].credibyteBalance = users[_beneficiary].credibyteBalance.add(_credibyteAmount);
+    if(users[_beneficiary].redemptionCounter != 0 || users[_beneficiary].fullyConverted != false) {
+      users[_beneficiary].redemptionCounter = 0;
+      users[_beneficiary].fullyConverted = false;
+    }
   }
 }
