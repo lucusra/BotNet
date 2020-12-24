@@ -1,4 +1,5 @@
-pragma solidity 0.6.6;
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
 
 import "./Permissioned.sol";
 import "./CreditsInterface.sol";
@@ -11,7 +12,7 @@ import "./DataBot.sol";
 // ----------------------------------------------------------------------------
 
 contract Credits is CreditsInterface, Permissioned, DataBot {
-	using SafeMath for uint;
+	using SafeMath for uint256;
 
 //  ----------------------------------------------------
 //               Variables + Constructor
@@ -20,16 +21,16 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
 	string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
-    uint256 initalCreditsSupply;                // supply upon deployment
+    uint256 public initialCreditsSupply;        // supply upon deployment
     uint256 totalCreditsSupply;                 // Credits' total supply (can be adjusted)
     uint256 public totalCreditsHeld;	        // how many Credits are in custody of users
     uint256 public remainingUnheldCredits;      // amount of credits that aren't owned
     address payable creditsContract;            // the address that holds the total supply
 
-    constructor() public {    
+    constructor() {    
         creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)     
-        initalCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
-    	totalCreditsSupply = initalCreditsSupply;                          // total credits supply = total inital credits supply
+        initialCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
+    	totalCreditsSupply = initialCreditsSupply;                          // total credits supply = total inital credits supply
         totalCreditsHeld = 0;                                              // credits held by users = 0
     	isPaused = false;                                                  // contract is unpaused on deployment
         users[creditsContract].creditBalance = totalCreditsSupply;         // creditsContract owns total supply
@@ -131,7 +132,7 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
     // ------------------------------------------------------------------------
     //                          Don't accept ETH
     // ------------------------------------------------------------------------
-    receive () external payable {
+    receive () virtual external payable {
         revert();
     }
 }
