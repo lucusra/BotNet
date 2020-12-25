@@ -8,7 +8,7 @@ pragma solidity ^0.7.0;
 // ----------------------------------------------------------------------------
 
 contract DataBot {
-    
+
     uint256 totalUsersHoldingCredits;               // amount of users holding credits
     mapping(address => userData) users;             // user address assigned to personal info sheet
 
@@ -19,6 +19,10 @@ contract DataBot {
     address[] enigmaParticipants;               // addresses participating in Enigma
 
     struct userData {
+        // --------Ownership---------
+        bool isOwner;
+        bool isCoOwner;
+
         // ---------General----------
         uint256 creditBalance;                      // credit balance
         uint256 toTransfer;                         // amount to transfer
