@@ -13,15 +13,15 @@ contract DataBot {
     mapping(address => userData) users;             // user address assigned to personal info sheet
 
     // Enigma Data
-    uint256 _enigmaFee;                         // Enigma entrance fee
-    uint256 _enigmaBalance;                     // total funds in Enigma
-    uint256 totalEnigmaParticipants;            // total enigma participants
-    address[] enigmaParticipants;               // addresses participating in Enigma
+    uint256 _enigmaFee;                             // Enigma entrance fee
+    uint256 _enigmaBalance;                         // total funds in Enigma
+    uint256 totalEnigmaParticipants;                // total enigma participants
+    address[] enigmaParticipants;                   // addresses participating in Enigma
 
     struct userData {
         // --------Ownership---------
-        bool isOwner;
-        bool isCoOwner;
+        bool isOwner;                               // isOwner or not
+        bool isCoOwner;                             // isCoOwner or not
 
         // ---------General----------
         uint256 creditBalance;                      // credit balance
@@ -44,8 +44,8 @@ contract DataBot {
         uint256 hackCompletionTime;                 // hacking completion time
 
         // ----------Enigma----------
-        bool inEnigma;
-        uint256 joinedEnigma;
-        uint256 leftEnigma;
+        bool inEnigma;                              // is in the enigma
+        uint256 joinedEnigma;                       // block of joining enigma
+        uint256 leftEnigma;                         // block of leaving engima
     }
 }
