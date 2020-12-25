@@ -12,12 +12,24 @@ contract Permissioned is DataBot {
         isPaused = false;
     }
 
-// ------------------[ ownership] ------------------
-    event OwnershipTransferred(address indexed from, address indexed to);
-    event NewCoOwner(address indexed promoter, address indexed newCoOwner);
-    event RevokedCoOwner(address indexed revoker, address indexed revokedCoOwner);
+//  ----------------------------------------------------
+//                      Ownership 
+//  ----------------------------------------------------
 
     address public owner;
+
+    event OwnershipTransferred(
+        address indexed from, 
+        address indexed to
+    );
+    event NewCoOwner(
+        address indexed promoter, 
+        address indexed newCoOwner
+    );
+    event RevokedCoOwner(
+        address indexed revoker, 
+        address indexed revokedCoOwner
+    );
 
     modifier onlyOwner() {
         require(
@@ -55,7 +67,10 @@ contract Permissioned is DataBot {
         emit OwnershipTransferred(msg.sender, _newOwner);
     }
 
-// --------------- [ pause functions ] ---------------
+
+//  ----------------------------------------------------
+//                    Pause Functions 
+//  ----------------------------------------------------
 
     // When true, function(s) are paused
     bool public isPaused;
