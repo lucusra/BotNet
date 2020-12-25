@@ -1,29 +1,58 @@
-pragma solidity 0.6.6;
+//SPDX-License-Identifier: Unlicense
+pragma solidity ^0.7.0;
 
 import "./SafeMath.sol";
+import "./DataBot.sol";
 
-contract Permissioned {
+contract Permissioned is DataBot {
     
-    constructor() public {
+    constructor() {
+        users[msg.sender].isOwner = true;
         owner = msg.sender;
         isPaused = false;
     }
 
 // ------------------[ ownership] ------------------
+    event OwnershipTransferred(address indexed from, address indexed to);
+    event NewCoOwner(address indexed promoter, address indexed newCoOwner);
+    event RevokedCoOwner(address indexed revoker, address indexed revokedCoOwner);
+
     address public owner;
 
-    event OwnershipTransferred(address indexed from, address indexed to);
-
     modifier onlyOwner() {
-        require(msg.sender == owner, "This function is restricted to the contract's owner");
+        require(
+            users[msg.sender].isOwner == true, 
+            "ERROR: This function is restricted to the contract's owner"
+        );
+        _;
+    }
+
+    modifier permissionRequired() {
+        require(
+            users[msg.sender].isOwner == true || users[msg.sender].isCoOwner == true, 
+            "ERROR: This function is restricted to the contract's owner & co-owner(s)"
+        );
         _;
     }
     
+    function addCoOwner(address _user) public onlyOwner {
+        require(users[_user].isCoOwner != true && users[_user].isOwner != true, "ERROR: Already Owner or CoOwner");
+        users[_user].isCoOwner = true;
+        emit NewCoOwner(msg.sender, _user);
+    }
+
+    function revokeCoOwner(address _user) public onlyOwner {
+        require(users[_user].isCoOwner == true, "ERROR: User currently not a CoOwner");
+        users[_user].isCoOwner = false;
+        emit RevokedCoOwner(msg.sender, _user);
+    }
+
     // Owner transfers ownership to new address
     function transferOwnership(address _newOwner) public onlyOwner {
-        require(_newOwner != owner, "Already owner");
-        emit OwnershipTransferred(owner, _newOwner);
-        owner = _newOwner;
+        require(users[_newOwner].isOwner != true, "ERROR: Already owner");
+        users[msg.sender].isOwner = false;
+        users[_newOwner].isOwner = true;
+        emit OwnershipTransferred(msg.sender, _newOwner);
     }
 
 // --------------- [ pause functions ] ---------------
@@ -33,19 +62,19 @@ contract Permissioned {
 
     // On - Off feature to resume functionality
     modifier pauseFunction {
-        require(isPaused != true, "Function is paused by the owner");
+        require(isPaused != true, "ERROR: Function is paused by the owner");
         _;
     }
 
     // Owner pauses the contract - DISABLING functionality
     function pauseContract() public onlyOwner {
-        require(isPaused != true, "Already paused functionality");
+        require(isPaused != true, "ERROR: Already paused functionality");
         isPaused = true;
     }
 
     // Owner resumes the contract - ENABLING functionality
     function resumeContract() public onlyOwner {
-        require(isPaused != false, "Already resumed functionality");
+        require(isPaused != false, "ERROR: Already resumed functionality");
         isPaused = false;
     }
 }
