@@ -1,4 +1,5 @@
-pragma solidity 0.6.6;
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
 
 import "./Credits.sol";
 
@@ -8,7 +9,11 @@ import "./Credits.sol";
 //
 // ----------------------------------------------------------------------------
 
+// TO DO...
+// [ ] Add liquidty pools from uniswap & integrate uniswap
+
 contract HackerBot is Credits {
+    using SafeMath for uint256;
 
     event hackCommencement (address indexed user, uint indexed encryptedAmount, uint indexed hackCompletitionTime);
     event hackRedeption (address indexed user, bool indexed hackCompletion, uint indexed timeOfRedeption);
@@ -25,12 +30,12 @@ contract HackerBot is Credits {
     function encrypt_And_Hack(uint encryptAmount) external HackInProgress pauseFunction returns (bool success) {
         require(encryptAmount != 0, "cannot encrypt 0");
         require(users[msg.sender].creditBalance >= encryptAmount, "insufficient credits to encrypt");
-        require(now >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to begin a new hack");
+        require(block.timestamp >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to begin a new hack");
         
         users[msg.sender].isHacking = true;
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(encryptAmount);
 
-        users[msg.sender].hackCompletionTime = now.add(30 days);
+        users[msg.sender].hackCompletionTime = block.timestamp.add(30 days);
 
         users[msg.sender].encryptedBalance = users[msg.sender].encryptedBalance.add(encryptAmount);
         users[msg.sender]._initalEncryptedBalance = users[msg.sender]._initalEncryptedBalance.add(encryptAmount);
@@ -48,7 +53,7 @@ contract HackerBot is Credits {
     /// @return success              : returns whether the transaction was a success or not.
     function decryptPortion_And_beginNewHack(uint decryptAmount, uint encryptAmount) external pauseFunction returns (uint decryptedAmount, uint encryptedAmount, bool hasDecryptedCredits, bool hasEncryptedCredits, bool success) {
         require(users[msg.sender].isHacking == true, "unable to alter hack once commenced - seek to cancel current hack");
-        require(now >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to withdraw");
+        require(block.timestamp >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to withdraw");
         require(users[msg.sender].encryptedBalance > decryptAmount, "cannot decrypt all funds, must have funds to begin new hack");
         require(users[msg.sender].creditBalance >= encryptAmount, "insufficient credits to encrypt");
 
@@ -56,7 +61,7 @@ contract HackerBot is Credits {
         bool _hasDecryptedCredits = false;
 
         // resets hacking progress.
-        users[msg.sender].hackCompletionTime = now.add(30 days);
+        users[msg.sender].hackCompletionTime = block.timestamp.add(30 days);
 
         // checks if decryptAmount != 0, if not it redeems "x" encrypted credits.
         if (decryptAmount > 0) {
@@ -87,7 +92,7 @@ contract HackerBot is Credits {
     function decryptAll_And_Redeem() external pauseFunction returns (bool success) {
         require(users[msg.sender].isHacking == true, "not hacking");
         require(users[msg.sender].encryptedBalance > 0, "insufficient HackerBot funds available to withdraw");
-        require(now >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to withdraw");
+        require(block.timestamp >= users[msg.sender].hackCompletionTime, "HackerBot progress incomplete, wait for completition or abort current hack if you wish to withdraw");
         
         users[msg.sender].isHacking = false;
         users[msg.sender].toTransfer = ((users[msg.sender].encryptedBalance).add((((users[msg.sender].encryptedBalance).mul(2)).div(100))));
@@ -97,7 +102,7 @@ contract HackerBot is Credits {
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(users[msg.sender].toTransfer);
         users[msg.sender].toTransfer = 0;
 
-        emit hackRedeption(msg.sender, true, now);
+        emit hackRedeption(msg.sender, true, block.timestamp);
         return true;
     }
     /// @notice Allows user to restart or cancel current hack.
@@ -114,7 +119,7 @@ contract HackerBot is Credits {
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(users[msg.sender].toTransfer);
         users[msg.sender].toTransfer = 0;
 
-        emit hackCancelation(msg.sender, users[msg.sender].isHacking, now);
+        emit hackCancelation(msg.sender, users[msg.sender].isHacking, block.timestamp);
         return true;
     }
     /// @notice Allows the user to view their current hack.
@@ -134,10 +139,10 @@ contract HackerBot is Credits {
                 users[msg.sender]._initalEncryptedBalance,
                 ((users[msg.sender]._initalEncryptedBalance).add((((users[msg.sender]._initalEncryptedBalance).mul(2)).div(100)))),
                 (((users[msg.sender]._initalEncryptedBalance).mul(2)).div(100)),
-                ((users[msg.sender].hackCompletionTime).sub(now)), 
-                (((users[msg.sender].hackCompletionTime).sub(now)).div(60)), 
-                ((((users[msg.sender].hackCompletionTime).sub(now)).div(60)).div(60)), 
-                (((((users[msg.sender].hackCompletionTime).sub(now)).div(60)).div(60)).div(24))
+                ((users[msg.sender].hackCompletionTime).sub(block.timestamp)), 
+                (((users[msg.sender].hackCompletionTime).sub(block.timestamp)).div(60)), 
+                ((((users[msg.sender].hackCompletionTime).sub(block.timestamp)).div(60)).div(60)), 
+                (((((users[msg.sender].hackCompletionTime).sub(block.timestamp)).div(60)).div(60)).div(24))
             );
     }
 }

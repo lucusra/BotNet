@@ -33,9 +33,9 @@ contract DataBot {
         uint256 credibyteBalance;                   // users' amount of credibytes, that can be exchanged for credits 
         uint256 timeUntilNextRedemption;            // user's amount of time until next redemption period after first redemption
         uint256 redemptionCounter;                  // the amount of times the user has redeemed 
-        uint256 remainingTimeUntilNextConversion;
+        uint256 remainingTimeUntilNextConversion;   // how long until next redemption conversion
         bool fullyConverted;                        // whether the user has converted all
-        bool hasParticipatedInITO;
+        bool hasParticipatedInITO;                  // whether user has participated in the ito
 
         // ----------Staking----------
         uint256 _initalEncryptedBalance;            // inital encrypted balance deposit for each hack
