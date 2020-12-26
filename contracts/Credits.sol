@@ -99,7 +99,6 @@ contract Credits is CreditsInterface, Permissioned {
 
     function approve(address _spender, uint _value) override external pauseFunction returns (bool success) {
     	_approve(msg.sender, _spender, _value);
-        emit Approval(msg.sender, _spender, _value);
     	return true;
     }
 
