@@ -3,7 +3,6 @@ pragma solidity ^0.7.0;
 
 import "./Permissioned.sol";
 import "./CreditsInterface.sol";
-import "./DataBot.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -11,26 +10,26 @@ import "./DataBot.sol";
 //
 // ----------------------------------------------------------------------------
 
-contract Credits is CreditsInterface, Permissioned, DataBot {
+contract Credits is CreditsInterface, Permissioned {
 	using SafeMath for uint256;
 
 //  ----------------------------------------------------
 //               Variables + Constructor
 //  ----------------------------------------------------
 
-    string _name = "Credits";
+	string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
     uint256 public initialCreditsSupply;        // supply upon deployment
-    uint256 totalCreditsSupply;                 // Credits' total supply (can be adjusted)
+    uint256 private totalCreditsSupply;         // Credits' total supply (can be adjusted)
     uint256 public totalCreditsHeld;	        // how many Credits are in custody of users
     uint256 public remainingUnheldCredits;      // amount of credits that aren't owned
     address payable creditsContract;            // the address that holds the total supply
 
     constructor() {    
         creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)     
-        initialCreditsSupply = 1500000 * 10**uint(_decimals);               // 1,500,000 inital credits supply
-    	totalCreditsSupply = initialCreditsSupply;                          // total credits supply = total inital credits supply
+        initialCreditsSupply = 1500000 * 10**uint(_decimals);              // 1,500,000 inital credits supply
+    	totalCreditsSupply = initialCreditsSupply;                         // total credits supply = total inital credits supply
         totalCreditsHeld = 0;                                              // credits held by users = 0
     	isPaused = false;                                                  // contract is unpaused on deployment
         users[creditsContract].creditBalance = totalCreditsSupply;         // creditsContract owns total supply
@@ -76,7 +75,7 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
         return true;
     }
 
-    function _transfer(address _from, address _to, uint256 _value) internal pauseFunction {
+    function _transfer(address _from, address _to, uint256 _value) private pauseFunction {
         if(_from == creditsContract) {
             users[_from].creditBalance = users[_from].creditBalance.sub(_value);
             users[_to].creditBalance = users[_to].creditBalance.add(_value);
@@ -99,9 +98,14 @@ contract Credits is CreditsInterface, Permissioned, DataBot {
 //  ----------------------------------------------------
 
     function approve(address _spender, uint _value) override external pauseFunction returns (bool success) {
-    	users[msg.sender].allowance[_spender] = _value;
-    	emit Approval(msg.sender, _spender, _value);
+    	_approve(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
     	return true;
+    }
+
+    function _approve(address _owner, address _spender, uint _value) private {
+        users[_owner].allowance[_spender] = _value;
+        emit Approval(_owner, _spender, _value);
     }
 
     function viewAllowance(address tokenOwner, address spender) override external pauseFunction view returns (uint remaining) {
