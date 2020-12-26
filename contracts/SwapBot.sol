@@ -1,9 +1,20 @@
-pragma solidity 0.6.6;
+//SPDX-License-Identifier: MIT
+pragma solidity ^0.7.0;
 
 import "./Credits.sol";
 
+// ----------------------------------------------------------------------------
+//
+//                      (c) The BotNet Project 2020
+//
+// ----------------------------------------------------------------------------
+
+// TO DO...
+// [ ] Fix deposit & withdraw functions
+
 contract SwapBot {
     using SafeMath for uint256;
+    Credits credits;
 
     address public feeAccount;                                                  // the account that receives exchange fees
     uint256 public feePercent;                                                  // the fee percentage
@@ -14,8 +25,18 @@ contract SwapBot {
     mapping(uint256 => bool) public orderCancelled;
     mapping(uint256 => bool) public orderFilled;
 
-    event Deposit(address token, address user, uint256 amount, uint256 balance);
-    event Withdraw(address token, address user, uint256 amount, uint256 balance);
+    event Deposit(
+        address token, 
+        address user, 
+        uint256 amount, 
+        uint256 balance
+    );
+    event Withdraw(
+        address token, 
+        address user, 
+        uint256 amount, 
+        uint256 balance
+    );
     event Order(
         uint256 id,
         address user,       
@@ -57,7 +78,7 @@ contract SwapBot {
         uint256 timestamp;      // time of when the order was created
     }
 
-    constructor (address _feeAccount, uint256 _feePercent) public {
+    constructor (address _feeAccount, uint256 _feePercent) {
         feeAccount = _feeAccount;
         feePercent = _feePercent;
     }
@@ -81,7 +102,8 @@ contract SwapBot {
 
     function depositCredits(address _token, uint _amount) public {
         require(_token != ETHER);
-        require(Credits(_token).transferFrom(msg.sender, address(this), _amount));
+        // require(Credits(_token).transferFrom(msg.sender, address(this), _amount));
+        // require(credits.transfer(address(this), _amount));
         creditsAvailable[_token][msg.sender] = creditsAvailable[_token][msg.sender].add(_amount);
         emit Deposit(_token, msg.sender, _amount, creditsAvailable[_token][msg.sender]);
     }
@@ -90,7 +112,7 @@ contract SwapBot {
         require(_token != ETHER);
         require(creditsAvailable[_token][msg.sender] >= _amount);
         creditsAvailable[_token][msg.sender] = creditsAvailable[_token][msg.sender].sub(_amount);
-        require(Credits(_token). transfer(msg.sender, _amount));
+        // require(Credits(_token). transfer(msg.sender, _amount));
         emit Withdraw(_token, msg.sender, _amount, creditsAvailable[_token][msg.sender]);
     }
 
@@ -100,8 +122,8 @@ contract SwapBot {
 
     function makeOrder(address _tokenGet, uint256 _amountGet, address _tokenGive, uint256 _amountGive) public {
         orderCount = orderCount.add(1);
-        orders[orderCount] = _Order(orderCount, msg.sender, _tokenGet, _amountGet, _tokenGive, _amountGive, now);
-        emit Order(orderCount, msg.sender, _tokenGet, _amountGet, _tokenGive, _amountGive, now);
+        orders[orderCount] = _Order(orderCount, msg.sender, _tokenGet, _amountGet, _tokenGive, _amountGive, block.timestamp);
+        emit Order(orderCount, msg.sender, _tokenGet, _amountGet, _tokenGive, _amountGive, block.timestamp);
     }
 
     function cancelOrder(uint256 _id) public {
@@ -109,7 +131,7 @@ contract SwapBot {
         require(address(_order.user) == msg.sender);        // order must be the user's
         require(_order.id == _id);                          // the order must exist
         orderCancelled[_id] = true;
-        emit Cancel(_order.id, msg.sender, _order.tokenGet, _order.amountGet, _order.tokenGive, _order.amountGive, now);
+        emit Cancel(_order.id, msg.sender, _order.tokenGet, _order.amountGet, _order.tokenGive, _order.amountGive, block.timestamp);
     }
 
     function fillOrder(uint256 _id) public {
@@ -132,6 +154,6 @@ contract SwapBot {
         creditsAvailable[_tokenGive][_user] = creditsAvailable[_tokenGive][_user].sub(_amountGive);
         creditsAvailable[_tokenGive][msg.sender] = creditsAvailable[_tokenGive][msg.sender].add(_amountGive);
 
-        emit Trade(_orderId, _user, _tokenGet, _amountGet, _tokenGive, _amountGive, msg.sender, now);
+        emit Trade(_orderId, _user, _tokenGet, _amountGet, _tokenGive, _amountGive, msg.sender, block.timestamp);
     }
 }

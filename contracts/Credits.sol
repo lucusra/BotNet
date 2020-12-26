@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "./Permissioned.sol";
-import "./CreditsInterface.sol";
+import "./ICredits.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -10,7 +10,7 @@ import "./CreditsInterface.sol";
 //
 // ----------------------------------------------------------------------------
 
-contract Credits is CreditsInterface, Permissioned {
+contract Credits is ICredits, Permissioned {
 	using SafeMath for uint256;
 
 //  ----------------------------------------------------
