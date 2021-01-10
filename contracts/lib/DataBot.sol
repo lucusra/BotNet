@@ -22,6 +22,7 @@ contract DataBot {
         // --------Ownership---------
         bool isOwner;                               // isOwner or not
         bool isCoOwner;                             // isCoOwner or not
+        bool hasContractAccess;                     // whether or not the address has access to call the modified functions
 
         // ---------General----------
         uint256 creditBalance;                      // credit balance
@@ -30,11 +31,11 @@ contract DataBot {
         mapping (address => uint256) allowance;     // credits allowed to transfer
 
         // ------------ITO------------
-        uint256 credibyteBalance;                   // users' amount of credibytes, that can be exchanged for credits 
+        uint256 creditBondBalance;                  // users' amount of credibytes, that can be exchanged for credits 
         uint256 timeUntilNextRedemption;            // user's amount of time until next redemption period after first redemption
-        uint256 redemptionCounter;                  // the amount of times the user has redeemed 
+        uint256 redemptionCounter;                  // the amount of times the user has redeemed (each redemption is 25% of total purchased - each month)
         uint256 remainingTimeUntilNextConversion;   // how long until next redemption conversion
-        bool fullyConverted;                        // whether the user has converted all
+        bool fullyConverted;                        // whether the user has converted all credit bonds to credits
         bool hasParticipatedInITO;                  // whether user has participated in the ito
 
         // ----------Staking----------
