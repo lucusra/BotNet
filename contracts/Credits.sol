@@ -1,8 +1,8 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "./lib/Permissioned.sol";
-import "./interfaces/ICredits.sol";
+import "./Permissioned.sol";
+import "./ICredits.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -28,7 +28,7 @@ contract Credits is ICredits, Permissioned {
     uint256 private totalCreditsSupply;                                           // Credits' total supply (can be adjusted)
     uint256 public totalCreditsHeld;	                                          // how many Credits are in custody of users
     uint256 public remainingUnheldCredits;                                        // amount of credits that aren't owned
-    address payable creditsContract;                                              // the address that holds the total supply
+    address public creditsContract;                                              // the address that holds the total supply
 
     constructor() {    
         isPaused = false;                                                  // contract is unpaused on deployment
@@ -144,7 +144,7 @@ contract Credits is ICredits, Permissioned {
     // ------------------------------------------------------------------------
     //                          Don't accept ETH
     // ------------------------------------------------------------------------
-    receive () virtual external payable {
+    receive() external payable {
         revert();
     }
 }
