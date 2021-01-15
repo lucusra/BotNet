@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 import "./Credits.sol";
-import "./Permissioned.sol";
+import "./lib/Permissioned.sol";
 
 /// @title Inital Token Offering (ITO)
 /// @dev ITO is the contract for managing the Credits' crowdsale
@@ -12,7 +12,8 @@ import "./Permissioned.sol";
 // [X] MAKE INTO A SLOW DRIP INSTEAD OF EVERYONE GETS AT ONCE (i.e. 25% at the start of each month for 4 months)
 // [X] MAKE TOKENS CLAIMABLE FOR CREDITS  
 // [ ] MAKE MODIFIER "SOLD OUT" FOR REMAINING CREDIBYTES REMAINING, THAT ARE ABLE TO BE PURCHASED
-// [X] MAKE A CREDITS TOTAL SUPPLY 
+// [ ] MAKE A CREDITS TOTAL SUPPLY 
+// [ ] FIX TRANSFERFROM & TRANSFER FUNCTION SO DEVS CANT DRAIN SUPPLY
 
 contract CreditsITO is Permissioned {
   using SafeMath for uint256;
@@ -20,9 +21,9 @@ contract CreditsITO is Permissioned {
   Credits credits;                                      // The token being sold
 
   uint256 public conversionRate_EthToCredits;           // How many credibytes a buyer gets per eth.
-  uint256 private _totalEthRaised;                      // Amount of eth raised
+  uint256 private _totalEthRaised;                        // Amount of eth raised
   uint256 public minEthRequirement;                     // minimum amount of eth required to buy credibytes
-  uint256 public remaining_itoCreditsSupply;            // the remaining credibytes that are available for purchase
+  uint256 public remaining_itoCreditsSupply;             // the remaining credibytes that are available for purchase
   uint256 public itoTotalParticipants;                  // the amount of ito user participants 
     
     
@@ -53,9 +54,9 @@ contract CreditsITO is Permissioned {
     timelockActivationDate = deploymentDate + 4 weeks;
     hasFinalised = false;
     conversionRate_EthToCredits = 10000;
-    minEthRequirement = 1 ether;                                                 // the minimum amount required to purchase credibytes
+    minEthRequirement = 1 ether;                                                // the minimum amount required to purchase credibytes
     
-    users[address(this)].hasContractAccess = true;                               // is given contract access for contractApprove()
+    users[address(this)].hasContractAccess = true;                                // is given contract access for contractApprove()
     remaining_itoCreditsSupply = 85000000;                                       // 8,500,000 credits available
   }
 
@@ -151,22 +152,22 @@ contract CreditsITO is Permissioned {
   // Allows the user to conver their credits to credits.
   function redeemCredits() canRedeem public returns (uint256 convertedAmount, bool sucess){
     require(users[msg.sender].creditBondBalance != 0, "ERROR: No credits remaining.");
-    uint256 _conversionAmount = validateConversion();                                          // checks how many credits user will receive
-    commenceConversion(_conversionAmount);                                                     // transfers credits to user
+    uint256 _conversionAmount = validateConversion();                                           // checks how many credits user will receive
+    commenceConversion(_conversionAmount);                                                      // transfers credits to user
     emit CreditBondRedemption(msg.sender, _conversionAmount, block.timestamp);
     return (_conversionAmount, true);
   }
 
   // Transfers eth to designated collector & transfers credits to beneficiary. 
   function buyCreditBond_withETH(address _beneficiary) ito_Timelock public payable {
-    uint256 ethAmount = msg.value;                                                             // ethAmount becomes msg.value
+    uint256 ethAmount = msg.value;                                                              // ethAmount becomes msg.value
     
-    _preValidatePurchase(_beneficiary, ethAmount);                                             // validates tx isn't sending 0 wei
+    _preValidatePurchase(_beneficiary, ethAmount);                                              // validates tx isn't sending 0 wei
     uint256 creditBondAmount = _getCreditsAmount(ethAmount);                                   // calculates the amount of credits to be created
     
-    _totalEthRaised = _totalEthRaised.add(ethAmount);                                          // updates state: totalEthRaised
+    _totalEthRaised = _totalEthRaised.add(ethAmount);                                             // updates state: totalEthRaised
 
-    _processPurchase(_beneficiary, creditBondAmount);                                          // transfers credits to beneficiary                       
+    _processPurchase(_beneficiary, creditBondAmount);                                            // transfers credits to beneficiary                       
     emit CreditBondPurchase(msg.sender, _beneficiary, ethAmount, creditBondAmount); 
   }
 
@@ -217,30 +218,30 @@ contract CreditsITO is Permissioned {
         if(users[msg.sender].redemptionCounter == 0) {
           users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);       // adds 1 onto the user's current redemption counter
           users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;         // adds 1 month until user's next redemption activation
-          return users[msg.sender].creditBondBalance.div(4);                                      // i.e. balance = 1000, calculates 250
+          return users[msg.sender].creditBondBalance.div(4);                                       // i.e. balance = 1000, calculates 250
         } 
           else if (users[msg.sender].redemptionCounter == 1) {
             users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
             users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;       // adds 1 month until user's next redemption activation
-            return users[msg.sender].creditBondBalance.div(3);                                    // i.e. balance = 750, calculates 250 
+            return users[msg.sender].creditBondBalance.div(3);                                     // i.e. balance = 750, calculates 250 
         } 
           else if (users[msg.sender].redemptionCounter == 2) {
             users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
             users[msg.sender].remainingTimeUntilNextConversion = block.timestamp + 4 weeks;       // adds 1 month until user's next redemption activation
-            return users[msg.sender].creditBondBalance.div(2);                                    // i.e. balance = 500, calculates 250  
+            return users[msg.sender].creditBondBalance.div(2);                                     // i.e. balance = 500, calculates 250  
         } 
           else if (users[msg.sender].redemptionCounter == 3) {
             users[msg.sender].redemptionCounter = users[msg.sender].redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
             users[msg.sender].remainingTimeUntilNextConversion = 0;     
             users[msg.sender].fullyConverted = true;
-            return users[msg.sender].creditBondBalance;                                           // i.e. balance = 250, calculates remaining       
+            return users[msg.sender].creditBondBalance;                                            // i.e. balance = 250, calculates remaining       
         }
     }
 
   function commenceConversion(uint256 _conversionAmount) internal {
-    users[msg.sender].creditBondBalance = 0;                                                      // sets user's credibyte balance to 0
+    users[msg.sender].creditBondBalance = 0;                                                                  // sets user's credibyte balance to 0
     credits.contractApprove(address(credits), msg.sender, _conversionAmount);
-    credits.transferFrom(address(credits), msg.sender, _conversionAmount);                        // transfers credits from to caller
+    credits.transferFrom(address(credits), msg.sender, _conversionAmount);                                    // transfers credits from to caller
   }
 
 
