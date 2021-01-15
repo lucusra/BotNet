@@ -1,8 +1,9 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "./Permissioned.sol";
-import "./ICredits.sol";
+import "hardhat/console.sol"; // used for debugging smart contracts
+import "./lib/Permissioned.sol";
+import "./interfaces/ICredits.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -21,7 +22,7 @@ contract Credits is ICredits, Permissioned {
 //               Variables + Constructor
 //  ----------------------------------------------------
 
-	string _name = "Credits";
+    string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
     uint256 public initialCreditsSupply = 20000000 * 10**uint(_decimals);         // 20,000,000 credits supply upon deployment
@@ -53,8 +54,8 @@ contract Credits is ICredits, Permissioned {
     function decimals() override external view returns (uint8) {
         return _decimals;
     }
-    function totalSupply() override external view returns (uint) {
-    	return totalCreditsSupply;	
+    function totalSupply() override external view returns (uint totalSupply_includingDecimals, uint totalSupply_excludingDecimals) {
+    	return (totalCreditsSupply, (totalCreditsSupply.div(10**_decimals)));	
     }
     function balanceOf(address tokenOwner) override external view returns (uint creditBalance) {
     	return users[tokenOwner].creditBalance;
@@ -65,6 +66,10 @@ contract Credits is ICredits, Permissioned {
 //  ----------------------------------------------------
 
     function transfer(address _to, uint _amount) override external pauseFunction returns (bool success) {
+        // debugging 
+        // console.log("Sender creditBalance is %s credits", users[_to].creditBalance);
+        // console.log("Trying to send %s credits to %s", _amount, _to);
+        // functionality
         require(users[msg.sender].creditBalance >= _amount, "insufficient funds, revert");
         _transfer(msg.sender, _to, _amount);
         return true;
