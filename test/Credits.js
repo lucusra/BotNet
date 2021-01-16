@@ -1,12 +1,13 @@
+const { ethers } = require("hardhat");
 const { expect } = require("chai");
 
 describe("Credits.sol: Uint Tests", () => {
-    let Credits, credits, creditContract, addr1, addr2;
+    let Credits, credits, addr1, addr2, addr3, addr4;
 
     beforeEach(async () => {
         Credits = await ethers.getContractFactory("Credits");
         credits = await Credits.deploy();
-        [creditsOwner, addr1, addr2, _] = await ethers.getSigners();
+        [addr1, addr2, addr3, addr4, _] = await ethers.getSigners();
     });
 
     describe("Deployment", () => {
@@ -21,14 +22,13 @@ describe("Credits.sol: Uint Tests", () => {
     });
 
     describe("Transactions", () => {
-        it("Should transfer tokens between accounts", async () => {
-            // Transfer from send to recipient
-            console.log("Sender creditBalance is %s credits", users[_to].creditBalance);
-            await token.transfer(addr1.address, 50);
-            console.log("Sent %s credits to %s", _amount, _to);
-            let addr1Balance = await token.balanceOf(addr1.address);
-            expect(addr1Balance).to.equal(50);
-        });
+        // it("Should use transfer() to send tokens from addr1 to addr2", async () => {
+        //     credits.contractApprove(credits.address, addr1, 100);
+        //     await credits.connect(addr1).transfer(addr2.address, 50);
+        //     let addr2Balance = await credits.balanceOf(addr2.address);
+        //     expect(addr2Balance).to.equal(50);
+        //     expect(credits.balanceOf(addr1.address)).to.equal(0);
+        // });
 
         // it("Should transfer tokens from addr1 to addr2", async () => {
         //     // Transfer from addr1 to addr2
@@ -39,13 +39,18 @@ describe("Credits.sol: Uint Tests", () => {
         //     expect(addr1Balance).to.equal(0);
         // });
 
-        // it("Should fail if sender doesn't have enough tokens", async () => {
-        //     const initialOwnerBalance = await token.balanceOf(owner.address);
+        it("Should fail if sender doesn't have enough tokens", async () => {
+            const initalCreditsSupply = await credits.balanceOf(credits.address);
 
-        //     await expect(token.connect(addr1).transfer(owner.address, 1)).to.be.revertedWith("Not enough tokens");
-        //     expect(await token.balanceOf(owner.address)).to.equal(initialOwnerBalance);
-        // });
+            await expect(credits.connect(addr1).transfer(credits.address, 1)).to.be.revertedWith("Not enough tokens");
+            expect(await credits.balanceOf(credits.address)).to.equal(initalCreditsSupply);
+        });
 
+
+        it("Should fail when user tries to access contract approve without access", async () => {
+            await expect(credits.connect(addr1).contractApprove(credits.address, addr1, 100)).to.be.revertedWith("No access");
+            expect(await credits.users[credits.address].allowance[addr1]).to.equal(0);
+        });
         // it("Should update balances after transfers", async () => {
         //     const initialOwnerBalance = await token.balanceOf(owner.address);
 
@@ -62,4 +67,13 @@ describe("Credits.sol: Uint Tests", () => {
         //     expect(addr2Balance).to.equal(50);
         // });
     });
+
+    // describe("", () => {
+    //     it("Should fail if sender doesn't have enough tokens", async () => {
+    //         const initialOwnerBalance = await token.balanceOf(owner.address);
+
+    //         await expect(token.connect(addr1).transfer(owner.address, 1)).to.be.revertedWith("Not enough tokens");
+    //         expect(await token.balanceOf(owner.address)).to.equal(initialOwnerBalance);
+    //     });
+    // });
 });
