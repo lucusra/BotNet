@@ -22,7 +22,7 @@ contract Credits is ICredits, Permissioned {
 //               Variables + Constructor
 //  ----------------------------------------------------
 
-    string _name = "Credits";
+	string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
     uint256 public initialCreditsSupply = 20000000 * 10**uint(_decimals);         // 20,000,000 credits supply upon deployment
