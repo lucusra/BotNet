@@ -22,7 +22,7 @@ contract DataBot {
         // --------Ownership---------
         bool isOwner;                               // isOwner or not
         bool isCoOwner;                             // isCoOwner or not
-        bool hasContractAccess;                     // whether or not the address has access to call the modified functions
+        bool hasContractAccess;                     // whether or not the address has access to call the `contractAccess` modified functions
 
         // ---------General----------
         uint256 creditBalance;                      // credit balance
