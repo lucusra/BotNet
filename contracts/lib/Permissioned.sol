@@ -8,6 +8,7 @@ contract Permissioned is DataBot {
     
     constructor() {
         users[msg.sender].isOwner = true;
+        users[msg.sender].hasContractAccess = true;
         owner = msg.sender;
         isPaused = false;
     }
@@ -67,6 +68,24 @@ contract Permissioned is DataBot {
         emit OwnershipTransferred(msg.sender, _newOwner);
     }
 
+
+//  ----------------------------------------------------
+//                   Contract Access
+//  ----------------------------------------------------
+
+    modifier contractAccess() {
+        require(
+            users[msg.sender].hasContractAccess == true,
+            "ERROR: No access"
+        );
+        _;
+    }
+
+    function giveContractAccess(address _address) external onlyOwner returns (bool success, bool updatedStatus) {
+        require(_address != owner, "ERROR: Unable to give yourself contract access");
+        users[_address].hasContractAccess = true;
+        return(true, users[_address].hasContractAccess);
+    }
 
 //  ----------------------------------------------------
 //                    Pause Functions 

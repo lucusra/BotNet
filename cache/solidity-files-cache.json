@@ -1,0 +1,497 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\Credits.sol": {
+      "lastModificationDate": 1610713585213,
+      "contentHash": "5ac8687367845bd93e71bf4581df7520",
+      "sourceName": "contracts/Credits.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "hardhat/console.sol",
+        "./lib/Permissioned.sol",
+        "./interfaces/ICredits.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "Credits"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\SwapBot.sol": {
+      "lastModificationDate": 1608906042995,
+      "contentHash": "cddc033c521414f1f147b65ae8e34e2b",
+      "sourceName": "contracts/SwapBot.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Credits.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "SwapBot"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\HackerBot.sol": {
+      "lastModificationDate": 1608419618834,
+      "contentHash": "4b9d3aacadadd1780a6dddfef02b1664",
+      "sourceName": "contracts/HackerBot.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Credits.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "HackerBot"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\DistributionBot.sol": {
+      "lastModificationDate": 1608905823229,
+      "contentHash": "bb3a0d70e089cc6c8289a2447b9007a1",
+      "sourceName": "contracts/DistributionBot.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Credits.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "DistributionBot"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\CreditsITO.sol": {
+      "lastModificationDate": 1610709845387,
+      "contentHash": "4166b0595e1b064bd22eb54f9872d8b2",
+      "sourceName": "contracts/CreditsITO.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./Credits.sol",
+        "./lib/Permissioned.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "CreditsITO"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\node_modules\\hardhat\\console.sol": {
+      "lastModificationDate": 1610332381558,
+      "contentHash": "cc4777addd464ea56fa35b1c45df0591",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\Migrations.sol": {
+      "lastModificationDate": 1608419673972,
+      "contentHash": "893749e2b7839e53abb1bd92c469de4f",
+      "sourceName": "contracts/Migrations.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.4.22 <0.8.0"
+      ],
+      "artifacts": [
+        "Migrations"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\lib\\Permissioned.sol": {
+      "lastModificationDate": 1610853405804,
+      "contentHash": "f67bbd425e24ef48b5dc91a8be80b7fa",
+      "sourceName": "contracts/lib/Permissioned.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./SafeMath.sol",
+        "./DataBot.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "Permissioned"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\interfaces\\ICredits.sol": {
+      "lastModificationDate": 1609047907440,
+      "contentHash": "bd2a0d1e910887687ed7c79bd9fbf226",
+      "sourceName": "contracts/interfaces/ICredits.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [
+        "./ERC20.sol"
+      ],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ICredits"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\lib\\SafeMath.sol": {
+      "lastModificationDate": 1608963848560,
+      "contentHash": "e2bfc4635f391f6e988c05fe90064cd7",
+      "sourceName": "contracts/lib/SafeMath.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">=0.6.0 <0.8.0"
+      ],
+      "artifacts": [
+        "SafeMath"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\lib\\DataBot.sol": {
+      "lastModificationDate": 1610851929955,
+      "contentHash": "538bb5b0de32bafbae55d11f8be2e6c2",
+      "sourceName": "contracts/lib/DataBot.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "DataBot"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\interfaces\\ERC20.sol": {
+      "lastModificationDate": 1610343231414,
+      "contentHash": "6406feac1f7031f7bc97a9e4c8327237",
+      "sourceName": "contracts/interfaces/ERC20.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "ERC20"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\interfaces\\uniswapv2.sol": {
+      "lastModificationDate": 1608961414157,
+      "contentHash": "901a3c3823e46487192bce26d39e7423",
+      "sourceName": "contracts/interfaces/uniswapv2.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.7.0"
+      ],
+      "artifacts": [
+        "IUniswapV2Factory",
+        "IUniswapV2Pair",
+        "UniswapRouterV2"
+      ]
+    },
+    "C:\\Users\\lucus\\Desktop\\BotNet HH\\contracts\\UniBot.sol": {
+      "lastModificationDate": 1610710156446,
+      "contentHash": "b65a926a4a380011a8cfbe22e8b1d275",
+      "sourceName": "contracts/UniBot.sol",
+      "solcConfig": {
+        "version": "0.7.0",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [],
+      "artifacts": []
+    }
+  }
+}
