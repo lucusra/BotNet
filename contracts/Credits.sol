@@ -116,6 +116,15 @@ contract Credits is ICredits, Permissioned {
 //                 Mint + Melt Credits 
 //  ----------------------------------------------------
 
+    // Temporarily placed here until the DEX is done.
+    function purchaseCreditsForEth() external payable returns (uint creditsPurchased, uint etherAmount) {
+        uint rate = 1000;
+        uint creditsBeingPurchased = msg.value.div(rate);
+        require(totalSupplyCap >= currentTotalSupply + creditsBeingPurchased, "ERROR: Total supply cap reached.");
+        generateCredits(creditsBeingPurchased);
+        return (creditsBeingPurchased, msg.value.div(18**10));
+    }
+
     function generateCredits(uint _amount) private returns (uint creditsGenerated) {
         require(totalSupplyCap >= currentTotalSupply + _amount, "ERROR: Total supply cap reached.");
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_amount);
