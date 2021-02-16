@@ -27,8 +27,6 @@ contract Credits is ICredits, Permissioned {
     uint8 _decimals = 18;                       
     uint256 public initialCreditsSupply = 20000000 * 10**uint(_decimals);         // 20,000,000 credits supply upon deployment
     uint256 private totalCreditsSupply;                                           // Credits' total supply (can be adjusted)
-    uint256 public totalCreditsHeld;	                                          // how many Credits are in custody of users
-    uint256 public remainingUnheldCredits;                                        // amount of credits that aren't owned
     address public creditsContract;                                              // the address that holds the total supply
 
     constructor() {    
@@ -36,9 +34,7 @@ contract Credits is ICredits, Permissioned {
         creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)    
         users[creditsContract].hasContractAccess = true;                   // is given contract access for contractApprove()
     	totalCreditsSupply = initialCreditsSupply;                         // total credits supply = total inital credits supply
-        totalCreditsHeld = 0;                                              // credits held by users = 0
         users[creditsContract].creditBalance = totalCreditsSupply;         // creditsContract owns total supply
-        remainingUnheldCredits = users[creditsContract].creditBalance;     // amount of credits that aren't owned = total supply
     }
 
 //  ----------------------------------------------------
@@ -88,13 +84,9 @@ contract Credits is ICredits, Permissioned {
         if(_from == creditsContract) {
             users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
             users[_to].creditBalance = users[_to].creditBalance.add(_amount);
-            remainingUnheldCredits = users[owner].creditBalance;
-            totalCreditsHeld = totalCreditsSupply.add(remainingUnheldCredits);
         } else if (_to == creditsContract){
             users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
             users[_to].creditBalance = users[_to].creditBalance.add(_amount);
-            remainingUnheldCredits = users[owner].creditBalance;
-            totalCreditsHeld = totalCreditsSupply.sub(remainingUnheldCredits);
         } else {
             users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
             users[_to].creditBalance = users[_to].creditBalance.add(_amount);
@@ -133,7 +125,6 @@ contract Credits is ICredits, Permissioned {
     function generateCredits(uint _amount) override external onlyOwner returns (bool success) {
         users[creditsContract].creditBalance = users[creditsContract].creditBalance.add(_amount);
         totalCreditsSupply = totalCreditsSupply.add(_amount);
-        remainingUnheldCredits = users[owner].creditBalance;              
         emit generatedCredits(totalCreditsSupply, creditsContract, _amount);
         return true;
     }
@@ -141,14 +132,13 @@ contract Credits is ICredits, Permissioned {
         require(users[creditsContract].creditBalance >= _amount);
         users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_amount);
         totalCreditsSupply = totalCreditsSupply.sub(_amount);
-        remainingUnheldCredits = users[creditsContract].creditBalance;    
         emit deletedCredits(totalCreditsSupply, _amount);
         return true;
     }
 
-    // ------------------------------------------------------------------------
-    //                          Don't accept ETH
-    // ------------------------------------------------------------------------
+// ------------------------------------------------------------------------
+//                          Don't accept ETH
+// ------------------------------------------------------------------------
     receive() external payable {
         revert();
     }
