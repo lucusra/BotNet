@@ -11,10 +11,6 @@ import "./interfaces/ICredits.sol";
 //
 // ----------------------------------------------------------------------------
 
-// TO DO...
-// [ ] ADD PERMISSION MODIFIER W/ "hasAccess" bool variable -> ONLY OBTAINABLE VIA DEPLOYER CONFIRMATION 
-// [ ] MAKE APPROVE FUNCTION THAT CONTRACTS WITH PERMISSION CAN ACCESS 
-
 contract Credits is ICredits, Permissioned {
 	using SafeMath for uint256;
 
@@ -25,16 +21,14 @@ contract Credits is ICredits, Permissioned {
 	string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
-    uint256 public initialCreditsSupply = 20000000 * 10**uint(_decimals);         // 20,000,000 credits supply upon deployment
-    uint256 private totalCreditsSupply;                                           // Credits' total supply (can be adjusted)
+    uint256 private currentTotalSupply;                                          // Credits' total supply (can be adjusted)
+    uint256 private totalSupplyCap;                                              // the amount of credits that can be generated
     address public creditsContract;                                              // the address that holds the total supply
 
     constructor() {    
         isPaused = false;                                                  // contract is unpaused on deployment
         creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)    
-        users[creditsContract].hasContractAccess = true;                   // is given contract access for contractApprove()
-    	totalCreditsSupply = initialCreditsSupply;                         // total credits supply = total inital credits supply
-        users[creditsContract].creditBalance = totalCreditsSupply;         // creditsContract owns total supply
+    	currentTotalSupply = 0;                                            // total credits supply = total inital credits supply
     }
 
 //  ----------------------------------------------------
@@ -51,7 +45,7 @@ contract Credits is ICredits, Permissioned {
         return _decimals;
     }
     function totalSupply() override external view returns (uint totalSupply_includingDecimals, uint totalSupply_excludingDecimals) {
-    	return (totalCreditsSupply, (totalCreditsSupply.div(10**_decimals)));	
+    	return (currentTotalSupply, (currentTotalSupply.div(10**_decimals)));	
     }
     function balanceOf(address tokenOwner) override external view returns (uint creditBalance) {
     	return users[tokenOwner].creditBalance;
@@ -62,7 +56,7 @@ contract Credits is ICredits, Permissioned {
 //  ----------------------------------------------------
 
     function transfer(address _to, uint _amount) override external pauseFunction returns (bool success) {
-        // debugging 
+        // hardhat debugging 
         // console.log("Sender creditBalance is %s credits", users[_to].creditBalance);
         // console.log("Trying to send %s credits to %s", _amount, _to);
         // functionality
@@ -119,26 +113,29 @@ contract Credits is ICredits, Permissioned {
     }
 
 //  ----------------------------------------------------
-//                 Mint + Burn Credits 
+//                 Mint + Melt Credits 
 //  ----------------------------------------------------
 
-    function generateCredits(uint _amount) override external onlyOwner returns (bool success) {
-        users[creditsContract].creditBalance = users[creditsContract].creditBalance.add(_amount);
-        totalCreditsSupply = totalCreditsSupply.add(_amount);
-        emit generatedCredits(totalCreditsSupply, creditsContract, _amount);
-        return true;
+    function generateCredits(uint _amount) private returns (uint creditsGenerated) {
+        require(totalSupplyCap >= currentTotalSupply + _amount, "ERROR: Total supply cap reached.");
+        users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_amount);
+        currentTotalSupply = currentTotalSupply.add(_amount);
+        emit generatedCredits(currentTotalSupply, msg.sender, _amount);
+        return _amount;
     }
-    function deleteCredits(uint _amount) override external onlyOwner returns (bool success) {
-        require(users[creditsContract].creditBalance >= _amount);
-        users[creditsContract].creditBalance = users[creditsContract].creditBalance.sub(_amount);
-        totalCreditsSupply = totalCreditsSupply.sub(_amount);
-        emit deletedCredits(totalCreditsSupply, _amount);
+
+    function deleteCredits(uint _amount) override external returns (bool success) {
+        require(users[msg.sender].creditBalance >= _amount);
+        users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(_amount);
+        currentTotalSupply = currentTotalSupply.sub(_amount);
+        totalSupplyCap = totalSupplyCap.sub(_amount);
+        emit deletedCredits(currentTotalSupply, _amount);
         return true;
     }
 
-// ------------------------------------------------------------------------
-//                          Don't accept ETH
-// ------------------------------------------------------------------------
+//  ----------------------------------------------------
+//                 Doesn't accept eth 
+//  ----------------------------------------------------
     receive() external payable {
         revert();
     }
