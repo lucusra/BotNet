@@ -9,10 +9,10 @@ interface ERC20 {
     function approve(address _spender, uint _amount) external returns (bool success);
     function transferFrom(address _from, address _to, uint _amount) external returns (bool success);
 
-// Are optional 
-     function symbol() external view returns (string memory);
-     function name() external view returns (string memory);
-     function decimals() external view returns (uint8);
+// // Are optional 
+//      function symbol() external view returns (string memory);
+//      function name() external view returns (string memory);
+//      function decimals() external view returns (uint8);
 
     event Transfer(address indexed from, address indexed to, uint tokens);
     event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
@@ -77,7 +77,7 @@ library SafeMath {
     }
 }
 
-abstract contract FlareToken is ERC20 {
+contract FlareToken is ERC20 {
     using SafeMath for uint256;
 
 	string private _name = "Flare Token";
@@ -200,7 +200,6 @@ abstract contract FlareToken is ERC20 {
         uint newValue;
         uint newBlock;
 
-    
         newValue = balances[_from][balances[_from].length].value.sub(_amount);
         newBlock = block.number;
         balances[_from].push(Checkpoint(newValue, newBlock));
