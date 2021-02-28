@@ -2,7 +2,7 @@
 pragma solidity ^0.7.0;
 
 /// @notice ERC20 https://eips.ethereum.org/EIPS/eip-20 with optional symbol, name and decimals
-interface ERC20 {
+interface IERC20 {
     function totalSupply() external view returns (uint256 tokenTotalSupply);
     function balanceOf(address _tokenOwner) external view returns (uint balance);
     function viewAllowance(address _tokenOwner, address _spender) external view returns (uint remaining);
