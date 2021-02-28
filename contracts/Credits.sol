@@ -97,10 +97,6 @@ contract Credits is ICredits, Permissioned {
 //               User Approve + Allowance 
 //  ----------------------------------------------------
 
-    function contractApprove(address _approver, address _approvee, uint256 _amount) contractAccess external returns (bool success) {
-        _approve(_approver, _approvee, _amount);
-        return true;
-    }
 
     function approve(address _spender, uint _amount) override external pauseFunction returns (bool success) {
     	_approve(msg.sender, _spender, _amount);
