@@ -1,7 +1,7 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-import "hardhat/console.sol"; // used for debugging smart contracts
+// import "hardhat/console.sol"; // used for debugging smart contracts
 import "./lib/Permissioned.sol";
 import "./interfaces/ICredits.sol";
 
@@ -27,7 +27,6 @@ contract Credits is ICredits, Permissioned {
 
     constructor() {    
         isPaused = false;                                                  // contract is unpaused on deployment
-        creditsContract = address(this);                                   // creditsContract = this contract address (Credits.sol)    
     	currentTotalSupply = 0;                                            // total credits supply = total inital credits supply
     }
 
@@ -44,11 +43,11 @@ contract Credits is ICredits, Permissioned {
     function decimals() override external view returns (uint8) {
         return _decimals;
     }
-    function totalSupply() override external view returns (uint totalSupply_includingDecimals, uint totalSupply_excludingDecimals) {
-    	return (currentTotalSupply, (currentTotalSupply.div(10**_decimals)));	
+    function totalSupply() override external view returns (uint tokenTotalSupply) {
+    	return currentTotalSupply;	
     }
     function balanceOf(address _tokenOwner) override external view returns (uint creditBalance) {
-    	return users[tokenOwner].creditBalance;
+    	return users[_tokenOwner].creditBalance;
     }
 
 //  ----------------------------------------------------
@@ -109,7 +108,7 @@ contract Credits is ICredits, Permissioned {
     }
 
     function viewAllowance(address _tokenOwner, address _spender) override external pauseFunction view returns (uint remaining) {
-        return users[tokenOwner].allowance[spender];
+        return users[_tokenOwner].allowance[_spender];
     }
 
 //  ----------------------------------------------------
@@ -133,7 +132,7 @@ contract Credits is ICredits, Permissioned {
         return _amount;
     }
 
-    function deleteCredits(uint _amount) override external returns (bool success) {
+    function deleteCredits(uint _amount) private returns (bool success) {
         require(users[msg.sender].creditBalance >= _amount);
         users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(_amount);
         currentTotalSupply = currentTotalSupply.sub(_amount);
