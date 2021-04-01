@@ -1,7 +1,6 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.7.0;
 
-// import "hardhat/console.sol"; // used for debugging smart contracts
 import "./lib/Permissioned.sol";
 import "./interfaces/ICredits.sol";
 
@@ -21,13 +20,26 @@ contract Credits is ICredits, Permissioned {
 	string _name = "Credits";
     string _symbol = "CRDTS";
     uint8 _decimals = 18;                       
-    uint256 private currentTotalSupply;                                          // Credits' total supply (can be adjusted)
-    uint256 private totalSupplyCap;                                              // the amount of credits that can be generated
-    address public creditsContract;                                              // the address that holds the total supply
 
-    constructor() {    
-        isPaused = false;                                                  // contract is unpaused on deployment
-    	currentTotalSupply = 0;                                            // total credits supply = total inital credits supply
+    // Credits' total supply (can be adjusted)
+    uint256 private _currentTotalSupply;
+
+    // the amount of credits that can be generated
+    uint256 private _totalSupplyCap;
+
+    // User's Credit balance
+    mapping (address => uint256) creditBalance;
+
+    // An amount of Credits the assignee is allowed to use from the assigner 
+    mapping(address => mapping(address => uint256)) allowance;
+
+    constructor() {
+        if(msg.sender == owner) {
+            grantContractAccess(address(this));
+        } 
+        isPaused = false;
+    	_currentTotalSupply = 0;
+        _totalSupplyCap = 1000000 * (_decimals ** 10); // 1 mil total supply
     }
 
 //  ----------------------------------------------------
@@ -43,107 +55,104 @@ contract Credits is ICredits, Permissioned {
     function decimals() override external view returns (uint8) {
         return _decimals;
     }
-    function totalSupply() override external view returns (uint tokenTotalSupply) {
-    	return currentTotalSupply;	
+    function totalSupply() override external view returns (uint256 tokenTotalSupply) {
+    	return _currentTotalSupply;	
     }
-    function balanceOf(address _tokenOwner) override external view returns (uint creditBalance) {
-    	return users[_tokenOwner].creditBalance;
+    function totalSupplyCap() override external view returns (uint256) {
+        return _totalSupplyCap;
+    }
+    function balanceOf(address tokenOwner) override external view returns (uint256 creditBalance) {
+    	return tokenOwner.creditBalance;
     }
 
 //  ----------------------------------------------------
 //                User Transfer Functions 
 //  ----------------------------------------------------
 
-    function transfer(address _to, uint _amount) override external pauseFunction returns (bool success) {
-        // hardhat debugging 
-        // console.log("Sender creditBalance is %s credits", users[_to].creditBalance);
-        // console.log("Trying to send %s credits to %s", _amount, _to);
-        // functionality
-        require(users[msg.sender].creditBalance >= _amount, "insufficient funds, revert");
-        _transfer(msg.sender, _to, _amount);
+    function transfer(address to, uint256 amount) override external pauseFunction returns (bool success) {
+        require(msg.sender.creditBalance >= amount, "insufficient funds, revert");
+        _transfer(msg.sender, to, amount);
         return true;
     }
     
-    function transferFrom(address _from, address _to, uint _amount) override external pauseFunction returns (bool success) {
+    function transferFrom(address from, address to, uint256 amount) override external pauseFunction returns (bool success) {
         require(
-            users[_from].creditBalance >= _amount, 
+            from.creditBalance >= amount, 
             "from address has insufficient funds, revert"
         );
         require(
-            users[msg.sender].allowance[_from] >= _amount, 
+            msg.sender.allowance[from] >= _amount, 
             "insufficient allowance, revert"
         );
-        users[msg.sender].allowance[_from] = users[msg.sender].allowance[_from].sub(_amount);
-        _transfer(_from, _to, _amount);
+        msg.sender.allowance[_from] = msg.sender.allowance[from].sub(amount);
+        _transfer(from, to, amount);
         return true;
     }
 
     function _transfer(address _from, address _to, uint256 _amount) private pauseFunction {
-        if(_from == creditsContract) {
-            users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
-            users[_to].creditBalance = users[_to].creditBalance.add(_amount);
-        } else if (_to == creditsContract){
-            users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
-            users[_to].creditBalance = users[_to].creditBalance.add(_amount);
+        if(_from == address(this)) {
+            _from.creditBalance = _from.creditBalance.sub(_amount);
+            _to.creditBalance = _to.creditBalance.add(_amount);
+        } else if (_to == address(this)){
+            _from.creditBalance = _from.creditBalance.sub(_amount);
+            _to.creditBalance = _to.creditBalance.add(_amount);
+            deleteCredits(address(this), _amount);
         } else {
-            users[_from].creditBalance = users[_from].creditBalance.sub(_amount);
-            users[_to].creditBalance = users[_to].creditBalance.add(_amount);
+            _from.creditBalance = _from.creditBalance.sub(_amount);
+            _to.creditBalance = _to.creditBalance.add(_amount);
         }
         emit Transfer(msg.sender, _to, _amount);
     }
+
 
 //  ----------------------------------------------------
 //               User Approve + Allowance 
 //  ----------------------------------------------------
 
+    function viewAllowance(address tokenOwner, address spender) override external pauseFunction view returns (uint remaining) {
+        return (tokenOwner)(spender).allowance;
+    }
 
-    function approve(address _spender, uint _amount) override external pauseFunction returns (bool success) {
-    	_approve(msg.sender, _spender, _amount);
+    // approves 
+    function approve(address spender, uint amount) override external pauseFunction returns (bool success) {
+    	_approve(msg.sender, spender, amount);
     	return true;
     }
 
     function _approve(address _owner, address _spender, uint _amount) private {
-        users[_owner].allowance[_spender] = _amount;
+        (_owner)(_spender).allowance = _amount;
         emit Approval(_owner, _spender, _amount);
     }
 
-    function viewAllowance(address _tokenOwner, address _spender) override external pauseFunction view returns (uint remaining) {
-        return users[_tokenOwner].allowance[_spender];
-    }
 
 //  ----------------------------------------------------
 //                 Mint + Melt Credits 
 //  ----------------------------------------------------
 
-    // Temporarily placed here until the DEX is done.
-    function purchaseCreditsForEth() external payable returns (uint creditsPurchased, uint etherAmount) {
-        uint rate = 1000;
-        uint creditsBeingPurchased = msg.value.div(rate);
-        require(totalSupplyCap >= currentTotalSupply + creditsBeingPurchased, "ERROR: Total supply cap reached.");
-        generateCredits(creditsBeingPurchased);
-        return (creditsBeingPurchased, msg.value.div(18**10));
-    }
-
-    function generateCredits(uint _amount) private returns (uint creditsGenerated) {
-        require(totalSupplyCap >= currentTotalSupply + _amount, "ERROR: Total supply cap reached.");
-        users[msg.sender].creditBalance = users[msg.sender].creditBalance.add(_amount);
-        currentTotalSupply = currentTotalSupply.add(_amount);
-        emit generatedCredits(currentTotalSupply, msg.sender, _amount);
+    ///@dev Generates Credits, if supply cap hasn't been reached.
+    function generateCredits(address _address, uint _amount) private returns (uint creditsGenerated) {
+        require(_totalSupplyCap >= _currentTotalSupply.add(_amount), "ERROR: Total supply cap reached.");
+        _address.creditBalance = _address.creditBalance.add(_amount);
+        _currentTotalSupply = _currentTotalSupply.add(_amount);
+        emit generatedCredits(_currentTotalSupply, _address, _amount);
         return _amount;
     }
 
-    function deleteCredits(uint _amount) private returns (bool success) {
-        require(users[msg.sender].creditBalance >= _amount);
-        users[msg.sender].creditBalance = users[msg.sender].creditBalance.sub(_amount);
-        currentTotalSupply = currentTotalSupply.sub(_amount);
-        totalSupplyCap = totalSupplyCap.sub(_amount);
-        emit deletedCredits(currentTotalSupply, _amount);
+    ///@dev Deletes Credits form caller's account
+    // [ ] Need to add voting system for community to burn a user's tokens - if a hack occurred
+    function deleteCredits(address _address, uint _amount) private returns (bool success) {
+        require(_address.creditBalance >= _amount);
+        _address.creditBalance = _address.creditBalance.sub(_amount);
+        _currentTotalSupply = _currentTotalSupply.sub(_amount);
+        emit deletedCredits(_currentTotalSupply, _amount);
         return true;
     }
 
 //  ----------------------------------------------------
 //                 Doesn't accept eth 
 //  ----------------------------------------------------
+    
+    // revert any eth txs to this contract
     receive() external payable {
         revert();
     }
