@@ -6,40 +6,38 @@ import "./SafeMath.sol";
 contract Permissioned  {
     using SafeMath for uint256;
 
-    // The address that can manipulate the contracts' states
-    address public owner;
 
     // Whether or not the address has access to call the `contractAccess` modified functions
-    mapping(address => bool) hasContractAccess;
+    mapping(address => bool) _hasContractAccess;
+
+    // The address that can manipulate the contracts' states
+    address owner;
 
     // When true, function(s) are paused
     bool public isPaused;
 
+    // Emits previous owner to new owner
     event OwnershipTransferred(
         address indexed from, 
         address indexed to
     );
 
+    // Caller must be owner, otherwise fail
     modifier onlyOwner() {
-        require(
-            msg.sender == owner, 
-            "ERROR: This function is restricted to the contract's owner"
-        );
+        require(msg.sender == owner, "ERROR: This function is restricted to the contract's owner");
         _;
     }
 
+    // Caller must have contract access, otherwise fail
     modifier requireContractAccess() {
-        require(
-            msg.sender.hasContractAccess == true,
-            "ERROR: No access"
-        );
+        require(_hasContractAccess[msg.sender] == true, "ERROR: No contract access");
         _;
     }
 
 
     constructor() {
         owner = msg.sender;
-        msg.sender.hasContractAccess = true;
+        _hasContractAccess[msg.sender] = true;
         isPaused = false;
     }
 
@@ -50,17 +48,22 @@ contract Permissioned  {
     }
 
     // Owner transfers ownership to new address
-    function transferOwnership(address _newOwner) public onlyOwner {
-        require(_newOwner.isOwner != true, "ERROR: Already owner");
-        msg.sender.isOwner = false;
-        _newOwner.isOwner = true;
-        emit OwnershipTransferred(msg.sender, _newOwner);
+    function transferOwnership(address newOwner) public onlyOwner {
+        require(newOwner != owner, "ERROR: Already owner");
+        owner = newOwner;
+        emit OwnershipTransferred(msg.sender, newOwner);
     }
 
-    function grantContractAccess(address _address) public onlyOwner returns (bool success, bool updatedStatus) {
-        require(_address != owner && _address.CoOwner != true, "ERROR: Unable to give yourself contract access");
-        _address.hasContractAccess = true;
-        return(true, _address.hasContractAccess);
+    // Fetches the inputted address to see if they have contract access
+    function hasContractAccess(address fetchAddress) public view returns (bool) {
+        return(_hasContractAccess[fetchAddress]);
+    }
+
+    // Gives the inputted address contract access 
+    function grantContractAccess(address grantedAddress) public onlyOwner returns (bool success, bool updatedStatus) {
+        require(grantedAddress != owner, "ERROR: Unable to give yourself contract access");
+        _hasContractAccess[grantedAddress] = true;
+        return(true, _hasContractAccess[grantedAddress]);
     }
 
     // Owner pauses the contract - DISABLING functionality
