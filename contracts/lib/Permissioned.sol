@@ -2,102 +2,65 @@
 pragma solidity ^0.7.0;
 
 import "./SafeMath.sol";
-import "./DataBot.sol";
 
-contract Permissioned is DataBot {
-    
-    constructor() {
-        users[msg.sender].isOwner = true;
-        users[msg.sender].hasContractAccess = true;
-        owner = msg.sender;
-        isPaused = false;
-    }
+contract Permissioned  {
+    using SafeMath for uint256;
 
-//  ----------------------------------------------------
-//                      Ownership 
-//  ----------------------------------------------------
-
+    // The address that can manipulate the contracts' states
     address public owner;
+
+    // Whether or not the address has access to call the `contractAccess` modified functions
+    mapping(address => bool) hasContractAccess;
+
+    // When true, function(s) are paused
+    bool public isPaused;
 
     event OwnershipTransferred(
         address indexed from, 
         address indexed to
     );
-    event NewCoOwner(
-        address indexed promoter, 
-        address indexed newCoOwner
-    );
-    event RevokedCoOwner(
-        address indexed revoker, 
-        address indexed revokedCoOwner
-    );
 
     modifier onlyOwner() {
         require(
-            users[msg.sender].isOwner == true, 
+            msg.sender == owner, 
             "ERROR: This function is restricted to the contract's owner"
         );
         _;
     }
 
-    modifier permissionRequired() {
+    modifier requireContractAccess() {
         require(
-            users[msg.sender].isOwner == true || users[msg.sender].isCoOwner == true, 
-            "ERROR: This function is restricted to the contract's owner & co-owner(s)"
-        );
-        _;
-    }
-    
-    function addCoOwner(address _user) public onlyOwner {
-        require(users[_user].isCoOwner != true && users[_user].isOwner != true, "ERROR: Already Owner or CoOwner");
-        users[_user].isCoOwner = true;
-        emit NewCoOwner(msg.sender, _user);
-    }
-
-    function revokeCoOwner(address _user) public onlyOwner {
-        require(users[_user].isCoOwner == true, "ERROR: User currently not a CoOwner");
-        users[_user].isCoOwner = false;
-        emit RevokedCoOwner(msg.sender, _user);
-    }
-
-    // Owner transfers ownership to new address
-    function transferOwnership(address _newOwner) public onlyOwner {
-        require(users[_newOwner].isOwner != true, "ERROR: Already owner");
-        users[msg.sender].isOwner = false;
-        users[_newOwner].isOwner = true;
-        emit OwnershipTransferred(msg.sender, _newOwner);
-    }
-
-
-//  ----------------------------------------------------
-//                   Contract Access
-//  ----------------------------------------------------
-
-    modifier contractAccess() {
-        require(
-            users[msg.sender].hasContractAccess == true,
+            msg.sender.hasContractAccess == true,
             "ERROR: No access"
         );
         _;
     }
 
-    function giveContractAccess(address _address) external onlyOwner returns (bool success, bool updatedStatus) {
-        require(_address != owner, "ERROR: Unable to give yourself contract access");
-        users[_address].hasContractAccess = true;
-        return(true, users[_address].hasContractAccess);
+
+    constructor() {
+        owner = msg.sender;
+        msg.sender.hasContractAccess = true;
+        isPaused = false;
     }
-
-//  ----------------------------------------------------
-//                    Pause Functions 
-//  ----------------------------------------------------
-
-    // When true, function(s) are paused
-    bool public isPaused;
 
     // On - Off feature to resume functionality
     modifier pauseFunction {
         require(isPaused != true, "ERROR: Function is paused by the owner");
         _;
+    }
+
+    // Owner transfers ownership to new address
+    function transferOwnership(address _newOwner) public onlyOwner {
+        require(_newOwner.isOwner != true, "ERROR: Already owner");
+        msg.sender.isOwner = false;
+        _newOwner.isOwner = true;
+        emit OwnershipTransferred(msg.sender, _newOwner);
+    }
+
+    function grantContractAccess(address _address) public onlyOwner returns (bool success, bool updatedStatus) {
+        require(_address != owner && _address.CoOwner != true, "ERROR: Unable to give yourself contract access");
+        _address.hasContractAccess = true;
+        return(true, _address.hasContractAccess);
     }
 
     // Owner pauses the contract - DISABLING functionality
