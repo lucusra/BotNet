@@ -6,7 +6,6 @@ import "./SafeMath.sol";
 contract Permissioned  {
     using SafeMath for uint256;
 
-
     // Whether or not the address has access to call the `contractAccess` modified functions
     mapping(address => bool) _hasContractAccess;
 
@@ -33,7 +32,6 @@ contract Permissioned  {
         require(_hasContractAccess[msg.sender] == true, "ERROR: No contract access");
         _;
     }
-
 
     constructor() {
         owner = msg.sender;

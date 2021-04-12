@@ -3,6 +3,7 @@ pragma solidity ^0.7.0;
 
 import "./lib/Permissioned.sol";
 import "./interfaces/ICredits.sol";
+import "./CreditsIto.sol";
 
 // ----------------------------------------------------------------------------
 //
@@ -33,6 +34,15 @@ contract Credits is ICredits, Permissioned {
     // An amount of Credits the assignee is allowed to use from the assigner 
     mapping(address => mapping(address => uint256)) allowance;
 
+    // If ito is underway, fail redemption attempt
+    modifier canRedeem {
+        require(
+            block.timestamp >= itoInfo.timelockActivationDate || itoInfo.hasFinalised == true, 
+            "ERROR: ITO phase is currently underway: can redeem once finalised or timelock has activated."
+        );
+        _;
+    }
+
     constructor() {
         if(msg.sender == owner) {
             grantContractAccess(address(this));
@@ -61,7 +71,7 @@ contract Credits is ICredits, Permissioned {
     function totalSupplyCap() override external view returns (uint256) {
         return _totalSupplyCap;
     }
-    function balanceOf(address tokenOwner) override external view returns (uint256 creditBalance) {
+    function balanceOf(address tokenOwner) override external view returns (uint256) {
     	return tokenOwner.creditBalance;
     }
 
@@ -81,10 +91,10 @@ contract Credits is ICredits, Permissioned {
             "from address has insufficient funds, revert"
         );
         require(
-            msg.sender.allowance[from] >= _amount, 
+            msg.sender.allowance(from) >= amount, 
             "insufficient allowance, revert"
         );
-        msg.sender.allowance[_from] = msg.sender.allowance[from].sub(amount);
+        msg.sender.allowance(from) = msg.sender.allowance(from).sub(amount);
         _transfer(from, to, amount);
         return true;
     }
@@ -126,7 +136,7 @@ contract Credits is ICredits, Permissioned {
 
 
 //  ----------------------------------------------------
-//                 Mint + Melt Credits 
+//                  Mint + Melt Credits 
 //  ----------------------------------------------------
 
     ///@dev Generates Credits, if supply cap hasn't been reached.
@@ -148,6 +158,67 @@ contract Credits is ICredits, Permissioned {
         return true;
     }
 
+
+//  ----------------------------------------------------
+//                    Ito Functions 
+//  ----------------------------------------------------
+    // Allows the user to conver their credits to credits.
+    function redeemCredits() canRedeem public returns (uint256 convertedAmount, bool sucess){
+    require(
+        userItoInfo(msg.sender)._pendingCreditBalance != 0, 
+        "ERROR: No credits remaining."
+    );
+
+    // checks how many credits user will receive
+    uint256 _conversionAmount = validateConversion();
+
+    // transfers credits to user
+    commenceConversion(_conversionAmount);
+    
+    return (_conversionAmount, true);
+    emit CreditBondRedemption(msg.sender, _conversionAmount, block.timestamp);
+    }
+
+    function validateConversion() internal returns(uint256 currentCredibyteConversion) {
+    require (
+        userItoInfo(msg.sender).remainingTimeUntilNextConversion <= block.timestamp || userItoInfo(msg.sender).redemptionCounter == 0,
+        "ERROR: Must wait the remaining time until next redeption."
+    );
+    require (
+        userItoInfo(msg.sender)._pendingCreditBalance != 0,
+        "ERROR: Insufficient credibyte balance to redeem."
+    );
+
+    if(userItoInfo(msg.sender).redemptionCounter == 0) {
+        userItoInfo(msg.sender).redemptionCounter = userItoInfo(msg.sender).redemptionCounter.add(1);     // adds 1 onto the user's current redemption counter
+        userItoInfo(msg.sender).remainingTimeUntilNextConversion = block.timestamp + 4 weeks;             // adds 1 month until user's next redemption activation
+        return userItoInfo(msg.sender)._pendingCreditBalance.div(4);                                      // i.e. balance = 1000, calculates 250
+    } else if (userItoInfo(msg.sender).redemptionCounter == 1) {
+        userItoInfo(msg.sender).redemptionCounter = userItoInfo(msg.sender).redemptionCounter.add(1);   // adds 1 onto the user's current redemption counter
+        userItoInfo(msg.sender).remainingTimeUntilNextConversion = block.timestamp + 4 weeks;           // adds 1 month until user's next redemption activation
+        return userItoInfo(msg.sender)._pendingCreditBalance.div(3);                                    // i.e. balance = 750, calculates 250 
+    } else if (userItoInfo(msg.sender).redemptionCounter == 2) {
+        userItoInfo(msg.sender).redemptionCounter = userItoInfo(msg.sender).redemptionCounter.add(1);   // adds 1 onto the user's current redemption counter
+        userItoInfo(msg.sender).remainingTimeUntilNextConversion = block.timestamp + 4 weeks;           // adds 1 month until user's next redemption activation
+        return userItoInfo(msg.sender)._pendingCreditBalance.div(2);                                    // i.e. balance = 500, calculates 250  
+    } else if (userItoInfo(msg.sender).redemptionCounter == 3) {
+        userItoInfo(msg.sender).redemptionCounter = userItoInfo(msg.sender).redemptionCounter.add(1);   // adds 1 onto the user's current redemption counter
+        userItoInfo(msg.sender).remainingTimeUntilNextConversion = 0;     
+        userItoInfo(msg.sender).fullyConverted = true;
+        return userItoInfo(msg.sender)._pendingCreditBalance;                                           // i.e. balance = 250, calculates remaining       
+    }
+    }
+
+    function commenceConversion(uint256 _conversionAmount) internal {
+        // sets user's pending credit balance to 0
+        userItoInfo(msg.sender)._pendingCreditBalance = 0;
+
+        // approves _conversionAmount to be sent from credit contract to msg.sender
+        contractApprove(address(this), msg.sender, _conversionAmount);
+
+        // transfers credits from credits contract to caller
+        transferFrom(address(this), msg.sender, _conversionAmount);
+    }
 //  ----------------------------------------------------
 //                 Doesn't accept eth 
 //  ----------------------------------------------------

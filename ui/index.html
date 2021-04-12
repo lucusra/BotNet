@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>BotNet front-end</title>
+    <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+    <!-- Using minified web3.js instead of npm i web3-->
+    <script language="javascript" type="text/javascript" src="web3.min.js"></script>
+    <!-- <script language="javascript" type="text/javascript" src="botnet_abi.js"></script> -->
+
+    <!-- Google looks for metadata to help searches -->
+    <meta name="description" content="BotNet">
+    <meta name="keywords" content="botnet, crypto botnet">
+    <style type="text/css">
+        #main-header{
+            text-align: center;
+            background-color: black;
+            color: white;
+            padding: 10px;
+        }
+
+        #main-footer{
+            text-align: center;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <header id="main-header">
+        <h1>BotNet</h1>
+    </header>
+
+    <form action="process.php" method="POST">
+        <div>
+            <label></label>
+            <input type="text" name="firstName"
+            placeholder="Enter first name">
+        </div>
+        <br>
+    </form>
+
+    <button click="exampleFunction">Click Me</button>
+    
+    <footer id="main-footer">
+        <p>Copyright &copy; 2020, BotNet</p>
+    </footer>
+</body>
+</html>

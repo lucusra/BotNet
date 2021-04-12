@@ -1,5 +1,10 @@
 # BotNet 🤖
 
+## Quick start
+`npm i` 
+
+We are using `web3`
+
 ## Background
 Inspired by SushiSwap (https://github.com/sushiswap/sushiswap) & the games "The Division" & "Cyberpunk2077". I wanted to create a real world version of being in a futuristic society where everything is online, holograms are everywhere, and cybernetics are everywhere in the world. I essentially tried to create the currency for one of these worlds, with the ability to encrypt your Credits (the native currency) and transfer them to a HackerBot to begin hacking (the equivalent of staking). The HackerBot infiltrates the overworld government banking systems and disguises itself as a bank account, accurring interest from the bank. However, the HackerBot uses special tech to manipulate and boost the base interest rate for itself, causing an upsurge in credit generation over time.
 
