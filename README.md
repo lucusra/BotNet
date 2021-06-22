@@ -1,4 +1,4 @@
-# BotNet 🤖
+# BotNet 🤖 ~ Incomplete/W.I.P
 
 ## Quick start
 `npm i` 
